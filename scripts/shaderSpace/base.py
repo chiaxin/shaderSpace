@@ -41,30 +41,19 @@ class BaseUIT:
         if mc.uiTemplate( self.Uit, q = True, ex = True ):
             mc.deleteUI( self.Uit, uit = True )
         mc.uiTemplate( self.Uit )
-        self.button()
-        self.text()
-        self.textField()
-        self.textFieldGrp()
-        self.radioButtonGrp()
-        self.layout()
+        self.templates()
 
-    def button(self):
-        mc.button( dt = self.Uit, w = 64, h = 64 )
-
-    def text(self):
+    def templates(self):
+        # Control
+        mc.button( dt = self.Uit, h = 30 )
         mc.text( dt = self.Uit, font = 'fixedWidthFont', w = 100 )
-
-    def textField(self):
-        mc.textField( dt = self.Uit, w = 128, h = 24 )
-
-    def textFieldGrp(self):
+        mc.textField( dt = self.Uit, w = 150, h = 26 )
         mc.textFieldGrp( dt = self.Uit, w = 300, h = 30, cw2 = ( 80, 240 ) )
+        mc.textFieldButtonGrp( dt = self.Uit, w = 320, cw3 = ( 80, 240, 60 ), bl = 'browse')
 
-    def layout(self):
-        mc.frameLayout( dt = self.Uit, cl = False, cll = False, mh = 5, mw = 5 )
-        mc.columnLayout( dt = self.Uit, adj = True , rs = 3 )
-
-    def radioButtonGrp(self):
+        # Layout
+        mc.frameLayout( dt = self.Uit, cl = False, cll = False, lv = False, mh = 5, mw = 5 )
+        mc.columnLayout( dt = self.Uit, adj = True , rs = 3, cal = 'left' )
         mc.radioButtonGrp( dt = self.Uit, cw4 = ( 60, 60, 60, 60 ), cw3 = ( 60, 60, 60 ) )
 
     def push(self):
@@ -77,11 +66,11 @@ class BaseBlock:
     Frl = 'BLOCK_FRL'
     Col = 'BLOCK_COL'
     Label = 'Base Block'
-    Width = 256
+    width = 256
     height= 128
 
     def build(self):
-        self.Frl = mc.frameLayout( l = self.Label, w = self.width, h = self.height )
+        self.Frl = mc.frameLayout( self.Frl, l = self.Label, w = self.width, h = self.height )
         self.content()
         mc.setParent('..')
 

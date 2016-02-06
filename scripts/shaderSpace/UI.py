@@ -1,7 +1,8 @@
 from functools import partial
 from config import optionsDefaultMaps, optionsVariableMaps
 from config import kAboutContent, kShaderPlugins, kShaderButtons
-from config import kChannelNames
+from config import kChannelNames, kVersion, kWebsite
+from config import kChannelsPanelAnn, kOptionsPanelAnn
 from core import isVaildName, substituteVariables, createShader
 import string
 import base
@@ -9,6 +10,9 @@ import tools
 import maya.cmds as mc
 import pymel.core as pm
 
+# -----------------------------------------------
+# : Read all option variablies
+# -----------------------------------------------
 for key in optionsVariableMaps.keys():
     if optionsVariableMaps[key] not in pm.env.optionVars:
         pm.optionVar[ optionsVariableMaps[key] ] = optionsDefaultMaps[key]
@@ -44,60 +48,23 @@ except:
     'MIR' : 0, \
     'IGN' : bool( optionsDefaultMaps['IGN'] ), \
     'AIL' : bool( optionsDefaultMaps['AIL'] ) }
+# -----------------------------------------------
+# : Read option variablies end
+# -----------------------------------------------
 
-def settingRestore():
-    ans = mc.confirmDialog( t = 'Restore Options', m = 'Restore All Options?', 
-    button=['Yes','No'], db = 'Yes', cb = 'No', ds = 'No' )
-    if ans == 'No': return
-    mc.textField( NamingBlock.kTextFields[0], e = True, tx = optionsDefaultMaps['AST'] )
-    NamingBlock.contents[0] = optionsDefaultMaps['AST']
-    mc.textField( NamingBlock.kTextFields[1], e = True, tx = optionsDefaultMaps['SDN'] )
-    NamingBlock.contents[1] = optionsDefaultMaps['SDN']
-    mc.textField( NamingBlock.kTextFields[2], e = True, tx = optionsDefaultMaps['USR'] )
-    NamingBlock.contents[2] = optionsDefaultMaps['USR']
-    mc.textField( NamingBlock.kTextFields[3], e = True, tx = optionsDefaultMaps['VER'] )
-    NamingBlock.contents[3] = optionsDefaultMaps['VER']
-    for idx, check in enumerate(optionsDefaultMaps['OPT']):
-        mc.checkBox( OptionsBlock.kCheckBoxs[idx], e = True, v = check )
-        OptionsBlock.checks[idx] = check
-    for idx, short in enumerate(optionsDefaultMaps['CST']):
-        mc.menuItem( ChannelsBlock.sMenus[idx], e = True, l = short )
-        ChannelsBlock.shorts[idx] = short
-    for idx, check in enumerate(optionsDefaultMaps['CCK']):
-        mc.checkBox( ChannelsBlock.checkBoxs[idx], e = True, v = check )
-        ChannelsBlock.checks[idx] = check
-    for idx, value in enumerate(optionsDefaultMaps['CFR']):
-        mc.menuItem( ChannelsBlock.fMenus[idx][value], e = True, rb = True )
-        ChannelsBlock.filters[idx] = value
-    mc.menuItem( MainMenu.Ign, e = True, cb = optionsDefaultMaps['IGN'] )
-    mc.menuItem( MainMenu.Ail, e = True, cb = optionsDefaultMaps['AIL'] )
-
-def optionVarsUpdate():
-    optionVarsCleanUp()
-    pm.optionVar[ optionsVariableMaps['AST'] ] = NamingBlock.contents[0]
-    pm.optionVar[ optionsVariableMaps['SDN'] ] = NamingBlock.contents[1]
-    pm.optionVar[ optionsVariableMaps['USR'] ] = NamingBlock.contents[2]
-    pm.optionVar[ optionsVariableMaps['VER'] ] = NamingBlock.contents[3]
-    pm.optionVar[ optionsVariableMaps['OPT'] ] = OptionsBlock.checks
-    pm.optionVar[ optionsVariableMaps['APR'] ] = gNameRuleMaps['APR']
-    pm.optionVar[ optionsVariableMaps['CST'] ] = \
-    map( lambda s : s.encode('ascii', 'ignore'), ChannelsBlock.shorts )
-    pm.optionVar[ optionsVariableMaps['CCK'] ] = ChannelsBlock.checks
-    pm.optionVar[ optionsVariableMaps['CFR'] ] = ChannelsBlock.filters
-    pm.optionVar[ optionsVariableMaps['BMP'] ] = gParameters['BMP']
-    pm.optionVar[ optionsVariableMaps['SNR'] ] = gNameRuleMaps['SNR']
-    pm.optionVar[ optionsVariableMaps['SGN'] ] = gNameRuleMaps['SGN']
-    pm.optionVar[ optionsVariableMaps['TEX'] ] = gNameRuleMaps['TEX']
-    pm.optionVar[ optionsVariableMaps['B2D'] ] = gNameRuleMaps['B2D']
-    pm.optionVar[ optionsVariableMaps['P2D'] ] = gNameRuleMaps['P2D']
-    pm.optionVar[ optionsVariableMaps['MIF'] ] = gNameRuleMaps['MIF']
-    pm.optionVar[ optionsVariableMaps['IGN'] ] = gParameters['IGN']
-    pm.optionVar[ optionsVariableMaps['AIL'] ] = gParameters['AIL']
-
-def optionVarsCleanUp():
-    for key in optionsVariableMaps.keys():
-        if mc.optionVar( ex = optionsVariableMaps[ key ] ):
-            mc.optionVar( remove = optionsVariableMaps[ key ] )
+def shaderSpace():
+    title = 'Shader Space Tool'
+    version = kVersion
+    WIN = MainUI()
+    UIT = MainUIT()
+    MENU= MainMenu()
+    NBLOCK= NamingBlock()
+    OBLOCK= OptionsBlock()
+    CBLOCK= ChannelsBlock()
+    ABLOCK= ActionsBlock()
+    BLOCKS = [ NBLOCK, OBLOCK, CBLOCK, ABLOCK ]
+    WIN.build( MENU, BLOCKS, UIT, title + ' ' + version )
+    WIN.show()
 
 # -----------------------------------------------
 # : Main window define
@@ -110,12 +77,6 @@ class MainUI( base.BaseUI ):
 
 class MainUIT( base.BaseUIT ):
     Uit = 'shaderSpaceMainUIT'
-    def button(self):
-       mc.button( dt = self.Uit, h = 30 )
-
-    def layout(self):
-        mc.frameLayout( dt = self.Uit, cl = False, cll = False, lv = False, mh = 5, mw = 5 )
-        mc.columnLayout( dt = self.Uit, adj = True , rs = 3 )
 
 class MainMenu:
     Ign = 'shaderSpaceIgnCheck'
@@ -125,11 +86,13 @@ class MainMenu:
         mc.menu( l = 'Edit' )
         mc.menuItem( l = 'Save Settings',   c = lambda *args : optionVarsUpdate()   )
         mc.menuItem( l = 'Restore Settings',c = lambda *args : settingRestore()     )
+        mc.menuItem( d = True )
         mc.menuItem( l = 'Export Settings', c = lambda *args : exportSetting()      )
-        mc.menuItem( l = 'Load Settings',   c = lambda *args : loadSetting()        )
+        mc.menuItem( l = 'Load Settings',   c = lambda *args : loadSetting(), en = False )
+        mc.menuItem( d = True )
         mc.menuItem( l = 'Clean Settings',  c = lambda *args : optionVarsCleanUp()  )
         mc.menu( l = 'Preferences' )
-        mc.menuItem( l = 'Node Name', sm = True )
+        mc.menuItem( l = 'Node Name Change', sm = True, to = True )
         mc.menuItem( l = 'Shader',          c = lambda *args : openRuleSetting( 'SNR', 'Shader') )
         mc.menuItem( l = 'Shading Group',   c = lambda *args : openRuleSetting( 'SGN', 'Shading Group' ) )
         mc.menuItem( l = 'Texture',         c = lambda *args : openRuleSetting( 'TEX', 'Texture Node' ) )
@@ -141,13 +104,13 @@ class MainMenu:
         cb = bool( gParameters['IGN'] ), c = lambda * args : self.toggleIGN() )
         self.Ail = mc.menuItem( self.Ail, l = 'Alpha Is Luminance in outAlpha', \
         cb = bool( gParameters['AIL'] ), c = lambda *args : self.toggleAIL() )
-        mc.menu( l = 'Batch' )
+        mc.menu( l = 'Tools' )
         mc.menuItem( l = 'UV Snap Shot', \
-        c = partial( openTools, 'uvsnapshot', 'Batch UV Snapshot from Display-Layers' ) )
+        c = partial( openTools, 'uvsnapshot', 'Batch UV Snapshot' ) )
         mc.menuItem( l = 'Export Meshes', \
-        c = partial( openTools, 'exportMesh', 'Batch Export Meshes from Display-Layers' ) )
+        c = partial( openTools, 'exportMesh', 'Batch Export Meshes' ) )
         mc.menuItem( l = 'Export Shaders', \
-        c = partial( openTools, 'exportShader', 'Export Shaders in Scene' ) )
+        c = partial( openTools, 'exportShader', 'Export Shaders' ) )
         mc.menuItem( l = 'Create PSD', \
         c = partial( openTools, 'createPsd', 'Create Photoshop File' ) )
         mc.menu( l = 'Help' )
@@ -161,10 +124,10 @@ class MainMenu:
         gParameters['AIL'] = mc.menuItem(self.Ail, q = True, cb = True )
 
 class NamingBlock( base.BaseBlock ):
-    Frl = 'NAMING_FRL'
-    Col = 'NAMING_COL'
+    Frl = 'shaderSpaceNamingFRL'
+    Col = 'shaderSpaceNamingCOL'
     width = 300
-    height= 150
+    height= 135
     Label = 'Naming'
     kTextFields = [ 'shaderSpaceAstTF', 'shaderSpaceSdnTF', \
     'shaderSpaceUsrTF', 'shaderSpaceVerTF' ]
@@ -217,17 +180,20 @@ class NamingBlock( base.BaseBlock ):
     def save(self, *args):
         index = args[0]
         userEnter = mc.textField( self.kTextFields[ index ], q = True, tx = True )
-        if not isVaildName( userEnter ):
+        if not userEnter:
+            mc.textField( self.kTextFields[ index ], e = True, tx = self.contents[ index ] )
+            return
+        elif not isVaildName( userEnter ):
             mc.warning('Invaild Name :' + userEnter)
             mc.textField( self.kTextFields[ index ], e = True, tx = self.contents[ index ] )
         else:
             self.contents[ index ] = userEnter
 
 class OptionsBlock( base.BaseBlock ):
-    Frl = 'OPTIONS_FRL'
-    Col = 'OPTIONS_COL'
+    Frl = 'shaderSpaceOptionsFRL'
+    Col = 'shaderSpaceOptionsCOL'
     width = 300
-    height= 50
+    height= 36
     Label = 'Options'
     kCheckBoxs = [ 'shaderSpaceAssignCB', 'shaderSpaceGammaCB', \
     'shaderSpaceAutoCB', 'shaderSpaceMirrorCB' ]
@@ -239,7 +205,7 @@ class OptionsBlock( base.BaseBlock ):
         checks = optionsDefaultMaps['OPT']
 
     def content(self):
-        self.Col = mc.columnLayout( self.Col )
+        self.Col = mc.columnLayout( self.Col, ann = kOptionsPanelAnn )
         mc.rowLayout( nc = 4 )
         self.kCheckBoxs[0] = mc.checkBox(self.kCheckBoxs[0], l = 'Assign', \
         v = self.checks[0], cc = partial(self.toggle, 0) )
@@ -277,11 +243,11 @@ class OptionsBlock( base.BaseBlock ):
         gParameters['MIR'] = args[0]
 
 class ChannelsBlock( base.BaseBlock ):
-    Frl = 'CHANNELS_FRL'
-    Col = 'CHANNELS_COL'
+    Frl = 'shaderSpaceChannelsFRL'
+    Col = 'shaderSpaceChannelsCOL'
     Label = 'Channel Selections'
     width = 300
-    height= 100
+    height= 80
 
     checkBoxs = [ \
     'ssColCB', 'ssBmpCB', 'ssRouCB', 'ssGlsCB', 'ssRelCB', \
@@ -336,8 +302,8 @@ class ChannelsBlock( base.BaseBlock ):
         pm.optionVar[ optionsVariableMaps['CFR'] ] = optionsDefaultMaps['CFR']
 
     def content(self):
-        mc.columnLayout()
-        mc.rowLayout( nc = 3, cw3 = (90, 90, 90) )
+        self.Col = mc.columnLayout( self.Col, ann = kChannelsPanelAnn )
+        mc.rowLayout( nc = 3, cw3 = (100, 100, 100) )
         self.checkBoxs[0] = mc.checkBox( self.checkBoxs[0], l = kChannelNames[0], \
         v = self.checks[0], cc = partial( self.toggle, 0 ) )
         self.checkBoxs[1] = mc.checkBox( self.checkBoxs[1], l = kChannelNames[1], \
@@ -346,7 +312,7 @@ class ChannelsBlock( base.BaseBlock ):
         v = self.checks[2], cc = partial( self.toggle, 2 ) )
         mc.setParent('..')
 
-        mc.rowLayout( nc = 3, cw3 = (90, 90, 90) )
+        mc.rowLayout( nc = 3, cw3 = (100, 100, 100) )
         self.checkBoxs[3] = mc.checkBox( self.checkBoxs[3], l = kChannelNames[3], \
         v = self.checks[3], cc = partial( self.toggle, 3 ) )
         self.checkBoxs[4] = mc.checkBox( self.checkBoxs[4], l = kChannelNames[4], \
@@ -355,7 +321,7 @@ class ChannelsBlock( base.BaseBlock ):
         v = self.checks[5], cc = partial( self.toggle, 5 ) )
         mc.setParent('..')
 
-        mc.rowLayout( nc = 3, cw3 = (90, 90, 90) )
+        mc.rowLayout( nc = 3, cw3 = (100, 100, 100) )
         self.checkBoxs[6] = mc.checkBox( self.checkBoxs[6], l = kChannelNames[6], \
         v = self.checks[6], cc = partial( self.toggle, 6 ) )
         self.checkBoxs[7] = mc.checkBox( self.checkBoxs[7], l = kChannelNames[7], \
@@ -392,7 +358,7 @@ class ChannelsBlock( base.BaseBlock ):
 
     def popShortChange(self, *args):
         ans = mc.promptDialog( t = 'Channel name', m = 'Enter short:', \
-        b = [ 'OK', 'Cancel' ], db = 'OK', cb = 'Cancel', ds = '' )
+        b = [ 'OK', 'Cancel' ], db = 'OK', cb = 'Cancel', ds = 'Cancel' )
         if ans == 'Cancel': return
         short = mc.promptDialog( q = True, tx = True )
         if not isVaildName( short ):
@@ -412,14 +378,15 @@ class ChannelsBlock( base.BaseBlock ):
         print 'bump value has been changed : {0}'.format( self.kBUMP_VALUES[args[0]] )
 
 class ActionsBlock( base.BaseBlock ):
-    Frl = 'ACTIONS_FRL'
-    Col = 'ACTIONS_COL'
+    Frl = 'shaderSpaceActionsFRL'
+    Col = 'shaderSpaceActionsCOL'
     width = 300
-    height= 150
+    height= 160
     label = 'Shader Library'
 
     def content(self):
-        self.Col = mc.columnLayout( h = 140 )
+        self.Col = mc.columnLayout( self.Col )
+        mc.text( l = 'Shader library' )
         mc.scrollLayout( h = 120, cr = True)
         for sd in kShaderButtons.keys():
             mc.button( l = kShaderButtons[sd], 
@@ -457,11 +424,14 @@ class ActionsBlock( base.BaseBlock ):
 
         sd, sg = createShader( nlist, stype, channels_name, \
         channels_check, options, channels_filter, rules )
+
         print 'New shader has been created : {0}, {1}'.format(sd, sg)
+
         if selections:
             mc.select( selections, r = True )
         if options[0] and selections:
             mc.sets( fe = sg )
+
         optionVarsUpdate()
 # -----------------------------------------------
 # : Main window end
@@ -512,7 +482,7 @@ class SubRuleBlock( base.BaseBlock ):
         self.close()
 
     def close(self, *args):
-        win = ( self.col ).split('|')[0]
+        win = ( self.Col ).split('|')[0]
         if mc.window( win, q = True, ex = True ):
             mc.deleteUI( win )
 
@@ -573,36 +543,40 @@ class IntroBlock( base.BaseBlock ):
         mc.setParent('..')
 
 class SubWinUIT( base.BaseUIT ):
-    Uit = 'SubRule_UIT'
-    def textField(self):
+    Uit = 'shaderSpaceRuleUIT'
+    def templates(self):
         mc.textField( dt = self.Uit, w = 300, h = 30 )
-
-    def button(self):
         mc.button( dt = self.Uit, w = 128, h = 32 )
-
-    def text(self):
         mc.text( dt = self.Uit, w = 100, font = 'fixedWidthFont', al = 'left' )
-
-    def layout(self):
         mc.frameLayout( dt = self.Uit, lv = False, cl = False, cll = False, mh = 5, mw = 5 )
         mc.columnLayout( dt = self.Uit, adj = True , rs = 5, cal = 'center' )
 # -----------------------------------------------
 # : Rule setting window end
 # -----------------------------------------------
 
-class UtilitiesUI( base.BaseUI ):
-    Win = 'SS_ToolsRule_UI'
-    width = 360
+# -----------------------------------------------
+# : Tool functions UI & methods
+# -----------------------------------------------
+class ToolsUI( base.BaseUI ):
+    Win = 'shaderSpaceToolsWIN'
+    Frl = 'shaderSpaceToolsFRL'
+    width = 420
     height= 200
 
-class UtilitiesBaseBlock( base.BaseBlock ):
-    width = 320
+class ToolsBlcok( base.BaseBlock ):
+    width = 400
     height= 180
-    col = 'UTILITIES_COL'
-    pathField = 'SS_UtilitiesPath_TF'
+    Col = 'shaderSpaceToolsBlockCOL'
+    pathFieldTFB = 'shaderSpaceToolsPathTFB'
     root = mc.workspace( q = True, rd = True )
 
-class UtilitiesMenu:
+    def browse(self):
+        user_input = mc.textFieldButtonGrp( self.pathFieldTFB, q = True , tx = True )
+        directory = mc.fileDialog2( fileMode = 3, caption = 'Save directory choice', dir = user_input )
+        if directory:
+            mc.textFieldButtonGrp( self.pathFieldTFB, e = True, tx = directory[0] )
+
+class ToolsMenu:
     def build(self):
         mc.menuBarLayout()
         mc.menu( l = 'Help' )
@@ -611,16 +585,19 @@ class UtilitiesMenu:
     def help(self):
         pass
 
-class ExportShaderBlock( UtilitiesBaseBlock ):
-    modeRBG = 'SS_SDFILEMODE_RBG'
+class ExportShaderBlock( ToolsBlcok ):
+    modeRBG = 'shaderSpaceExportShaderModeRBG'
     def content(self):
-        self.pathField = mc.textFieldGrp( self.pathField, l = 'Output Path', tx = self.root )
+        self.pathFieldTFB = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Path', tx = self.root, \
+        bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
+
         self.modeRBG = mc.radioButtonGrp( self.modeRBG, nrb = 2, l = 'Mode', \
-        labelArray2 = [ 'All', 'Selected' ], sl = 1 )
+        labelArray2 = [ 'All', 'Selected' ], sl = 1, cw3 = ( 60, 60, 60 ) )
+
         mc.button( l = 'Export Shaders', c = lambda *args : self.doIt() )
 
     def doIt(self):
-        output_path = ( mc.textFieldGrp( self.pathField, q = True, tx = True ) ).replace( '\\', '/' )
+        output_path = ( mc.textFieldButtonGrp( self.pathFieldTFB, q = True, tx = True ) ).replace( '\\', '/' )
         mode_idx = mc.radioButtonGrp( self.modeRBG, q = True, sl = True )
         mode = 'all'
         if mode_idx == 1:
@@ -629,20 +606,29 @@ class ExportShaderBlock( UtilitiesBaseBlock ):
             mode = 'selected'
         tools.exportShaders( output_path, mode )
 
-class ExportMeshBlock( UtilitiesBaseBlock ):
-    includeTF = 'SS_INCLUDE_TF'
-    excludeTF = 'SS_EXCLUDE_TF'
-    typeRBG   = 'SS_FILETYPE_RBG'
+class ExportMeshBlock( ToolsBlcok ):
+    includeTF = 'shaderSpaceExportMeshIncldeTF'
+    excludeTF = 'shaderSpaceExportMeshExcludeTF'
+    grpRBG    = 'shaderSpaceExportMeshMethodRBG'
+    typeRBG   = 'shaderSpaceExportMeshFileTypeRBG'
     def content(self):
-        self.pathField = mc.textFieldGrp( self.pathField, l = 'Output Path', tx = self.root )
+        self.pathFieldTFB = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Path', tx = self.root, \
+        bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
+
+        self.grpRBG = mc.radioButtonGrp( self.grpRBG, nrb = 2, l = 'From', \
+        labelArray2 = ['displayLayers', 'sets'], sl = 1, cw3 = ( 60, 90, 60 ) )
+
         self.typeRBG = mc.radioButtonGrp( self.typeRBG, nrb = 3,l = 'File Type', \
-        labelArray3=['obj', 'ma', 'mb'], sl = 0 )
-        includeTF = mc.textFieldGrp( self.includeTF, l = 'Include:', cw2 = ( 60, 120 ) )
-        excludeTF = mc.textFieldGrp( self.excludeTF, l = 'Exclude:', cw2 = ( 60, 120 ) )
+        labelArray3 = ['obj', 'ma', 'mb'], sl = 1, cw4 = ( 60, 45, 45, 45 ) )
+
+        mc.rowLayout( nc = 2 )
+        includeTF = mc.textFieldGrp( self.includeTF, l = 'Include:', cw2 = ( 60, 80 ) )
+        excludeTF = mc.textFieldGrp( self.excludeTF, l = 'Exclude:', cw2 = ( 60, 80 ) )
+        mc.setParent('..')
         mc.button( l = 'Export Mesh', c = lambda *args : self.doIt() )
 
     def doIt(self):
-        output_path =  ( mc.textFieldGrp( self.pathField, q = True, tx = True ) ).replace( '\\', '/' )
+        output_path =  ( mc.textFieldButtonGrp( self.pathFieldTFB, q = True, tx = True ) ).replace( '\\', '/' )
         output_type = 'obj'
         filetype = mc.radioButtonGrp( self.typeRBG, q = True, sl = True )
         if filetype == 1:
@@ -656,85 +642,122 @@ class ExportMeshBlock( UtilitiesBaseBlock ):
             return
         exclude = mc.textFieldGrp( self.excludeTF, q = True, tx = True )
         include = mc.textFieldGrp( self.includeTF, q = True, tx = True )
-        tools.exportPolygons( output_path, output_type, exclude, include )
+        grp = mc.radioButtonGrp( self.grpRBG, q = True, sl = True )
+        tools.exportPolygons( output_path, output_type, exclude, include, grp )
 
-class UVSnapshotBlock( UtilitiesBaseBlock ):
-    resRBG = 'SS_UVSS_RES_RBG'
-    extRBG = 'SS_UVSS_EXT_RBG'
-    clrRBG = 'SS_UVSS_CLR_RBG'
+class UVSnapshotBlock( ToolsBlcok ):
+    resRBG = 'shaderSpaceUVsnapshotResRBG'
+    extRBG = 'shaderSpaceUVsnapshotExtRBG'
+    clrRBG = 'shaderSpaceUVsnapshotColRBG'
+    grpRBG = 'shaderSpaceUVsnapshotFromRBG'
     def content(self):
-        self.col = mc.columnLayout( self.col )
-        self.pathField = mc.textFieldGrp( self.pathField, l = 'Output Folder', tx = self.root )
+        self.pathFieldTFB = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Folder', tx = self.root, \
+        bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
+
+        self.grpRBG = mc.radioButtonGrp( self.grpRBG, nrb = 2, l = 'From', \
+        labelArray2 = ['displayLayers', 'sets'], sl = 1, cw3 = ( 60, 120, 90 ) )
+
         self.res_TF = mc.radioButtonGrp( self.resRBG, nrb = 3, l = 'Resolution', \
-        labelArray3=['1024', '2048', '4096'], sl = 3 )
+        labelArray3 = ['1024', '2048', '4096'], sl = 3, cw4 = ( 60, 80, 80, 80 ) )
+
         self.ext_TF = mc.radioButtonGrp( self.extRBG, nrb = 3, l = 'Extension', \
-        labelArray3=['png', 'tif', 'tga'], sl = 1 )
+        labelArray3 = ['png', 'tif', 'tga'], sl = 1, cw4 = ( 60, 80, 80, 80 ) )
+
         self.clr = mc.radioButtonGrp( self.clrRBG , nrb = 3, l = 'Color', \
-        labelArray3=['White', 'Black', 'Red'], sl = 1 )
+        labelArray3 = ['White', 'Black', 'Red'], sl = 1, cw4 = ( 60, 80, 80, 80 ) )
+
         mc.button( l = 'UV SnapShot', c = lambda *args : self.doIt() )
-        mc.setParent('..')
 
     def doIt(self):
-        output_path = ( mc.textFieldGrp( self.pathField, q = True, tx = True ) ).replace( '\\', '/' )
+        output_path = ( mc.textFieldButtonGrp( self.pathFieldTFB, q = True, tx = True ) ).replace( '\\', '/' )
         resolution = 4096
         extension = 'png'
         wireframe_color = [ 1.0, 1.0, 1.0 ]
         res = mc.radioButtonGrp( self.resRBG, q = True, sl = True )
         ext = mc.radioButtonGrp( self.extRBG, q = True, sl = True )
         clr = mc.radioButtonGrp( self.clrRBG, q = True, sl = True )
+        grp = mc.radioButtonGrp( self.grpRBG, q = True, sl = True )
+
         if res ==   1: resolution = 1024
         elif res == 2: resolution = 2048
         elif res == 3: resolution = 4096
-        else: return
+
         if ext ==   1: extension = 'png'
         elif ext == 2: extension = 'tif'
         elif ext == 3: extension = 'tga'
-        else: return
+
         if clr ==   1: wireframe_color = [ 255, 255, 255 ]
         elif clr == 2: wireframe_color = [ 0, 0, 0 ]
         elif clr == 3: wireframe_color = [ 255, 0, 0 ]
-        else: return
-        tools.uvSnapshot( output_path, resolution, extension, wireframe_color )
 
-class CreatePsdBlock( UtilitiesBaseBlock ):
-    uvPathTF    = 'SS_UVPATH_TF'
-    psNameTF    = 'SS_PSFILE_TF'
-    resRB       = 'SS_PSDRES_RB'
+        tools.uvSnapshot( output_path, resolution, extension, wireframe_color, grp )
+
+class CreatePsdBlock( ToolsBlcok ):
+    uvPathTF    = 'shaderSpaceCreatePsdUVPathTF'
+    psNameTF    = 'shaderSpaceCreatePsdNameTF'
+    resRBG      = 'shaderSpaceCreatePsdResRBG'
     def content(self):
-        self.pathField   = mc.textFieldGrp( self.pathField, l = 'Output Folder', tx = self.root )
-        self.psdfilename = mc.textFieldGrp( self.psNameTF,  l = 'PSD File', tx = '' )
-        self.uvPathTF    = mc.textFieldGrp( self.uvPathTF,  l = 'UV Image', tx = self.root )
-        self.resRB = mc.radioButtonGrp( self.resRB, nrb = 3,l = 'Resolution', \
-        labelArray3=['1024', '2048', '4096'], sl = 3 )
+        self.pathFieldTFB   = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Folder', tx = self.root, \
+        bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
+
+        self.psdfilename = mc.textFieldGrp( self.psNameTF,  l = 'PSD Name', tx = '', cw2 = ( 80, 160 ) )
+
+        self.uvPathTF    = mc.textFieldGrp( self.uvPathTF,  l = 'UV Image', tx = self.root, cw2 = ( 80, 280 ) )
+
+        self.resRBG = mc.radioButtonGrp( self.resRBG, nrb = 3,l = 'Resolution', \
+        labelArray3 = ['1024', '2048', '4096'], sl = 3, cw4 = ( 80, 80, 80, 80 ) )
         mc.button( l = 'Create PSD', c = lambda *args : self.doIt() )
 
     def doIt(self):
-        output_path = ( mc.textFieldGrp( self.pathField, q = True, tx = True ) ).replace( '\\', '/' )
+        output_path = ( mc.textFieldGrp( self.pathFieldTFB, q = True, tx = True ) ).replace( '\\', '/' )
         psd_name = mc.textFieldGrp( self.psNameTF, q = True, tx = True )
         output_name = '{0}/{1}.psd'.format( output_path, psd_name )
         uvsnapshot_path = ( mc.textFieldGrp( self.uvPathTF, q = True, tx = True ) ).replace( '\\', '/' )
         channels = [ ChannelsBlock.shorts[idx].encode('ascii', 'ignore') \
         for idx in range(len(kChannelNames)) if ChannelsBlock.checks[idx] ]
-        res_index = mc.radioButtonGrp( self.resRB, q = True, sl = True )
+        res_index = mc.radioButtonGrp( self.resRBG, q = True, sl = True )
         resolution = 1024
         if res_index == 1   : resolution = 1024
         elif res_index == 2 : resolution = 2048
         elif res_index == 3 : resolution = 4096
         tools.createPhotoshopFile( output_name, uvsnapshot_path, channels, resolution )
 
+def openTools(tool, title, *args):
+    win = ToolsUI()
+    if tool == 'uvsnapshot':
+        block = UVSnapshotBlock()
+    elif tool == 'exportMesh':
+        block = ExportMeshBlock()
+    elif tool == 'exportShader':
+        block = ExportShaderBlock()
+    elif tool == 'createPsd':
+        block = CreatePsdBlock()
+    else:
+        mc.warning('Unknow tool : {1}'.format( tool ))
+    menu = ToolsMenu()
+    win.build( menu, [block], SubWinUIT(), title )
+    win.show()
+
+# -----------------------------------------------
+# : Tool functions UI & methods end
+# -----------------------------------------------
+
 class AboutUI( base.BaseUI ):
-    Win = 'SDSE_ABOUT_WIN'
-    height= 280
+    Win = 'shaderSpaceAboutWIN'
+    height= 320
     width = 300
 
 class AboutBlock( base.BaseBlock ):
-    height= 240
-    width = 300
-    label = 'About'
+    height= 260
+    width = 320
+    Label = 'About'
     def content(self):
         mc.columnLayout()
-        mc.scrollField( ed = False, ww = True, w = 280, h = 210, text = kAboutContent )
-        mc.button( l = 'OK', w = 120, h = 30, c = lambda *args : self.close() )
+        mc.scrollField( ed = False, ww = True, w = 300, h = 240, text = kAboutContent )
+        mc.setParent('..')
+        mc.rowLayout( nc = 2 )
+        mc.button( l = 'Website', w = 90, h = 30, c = lambda *args : mc.launch( web = kWebsite ) )
+        mc.button( l = 'OK', w = 90, h = 30, c = lambda *args : self.close() )
         mc.setParent('..')
 
     def close(self):
@@ -757,6 +780,9 @@ def openAbout(*args):
 def openHelp(*args):
     pass
 
+# -----------------------------------------------
+# : Option variable functions
+# -----------------------------------------------
 def exportSetting():
     ssoFilter = 'Shader Space Options (*.sso)'
     config_files = mc.fileDialog2( ff = ssoFilter, ds = 2, cap = 'Save configuration', \
@@ -785,19 +811,58 @@ def exportSetting():
 def loadSetting():
     pass
 
-def openTools(tool, title, *args):
-    win = UtilitiesUI()
-    if tool == 'uvsnapshot':
-        block = UVSnapshotBlock()
-    elif tool == 'exportMesh':
-        block = ExportMeshBlock()
-    elif tool == 'exportShader':
-        block = ExportShaderBlock()
-    elif tool == 'createPsd':
-        block = CreatePsdBlock()
-    else:
-        mc.warning('Unknow tool : {1}'.format( tool ))
-    menu = UtilitiesMenu()
-    win.build( menu, [block], SubWinUIT(), title )
-    win.show()
+def settingRestore():
+    ans = mc.confirmDialog( t = 'Restore Options', m = 'Restore All Options?', 
+    button=['Yes','No'], db = 'Yes', cb = 'No', ds = 'No' )
+    if ans == 'No': return
+    mc.textField( NamingBlock.kTextFields[0], e = True, tx = optionsDefaultMaps['AST'] )
+    NamingBlock.contents[0] = optionsDefaultMaps['AST']
+    mc.textField( NamingBlock.kTextFields[1], e = True, tx = optionsDefaultMaps['SDN'] )
+    NamingBlock.contents[1] = optionsDefaultMaps['SDN']
+    mc.textField( NamingBlock.kTextFields[2], e = True, tx = optionsDefaultMaps['USR'] )
+    NamingBlock.contents[2] = optionsDefaultMaps['USR']
+    mc.textField( NamingBlock.kTextFields[3], e = True, tx = optionsDefaultMaps['VER'] )
+    NamingBlock.contents[3] = optionsDefaultMaps['VER']
+    for idx, check in enumerate(optionsDefaultMaps['OPT']):
+        mc.checkBox( OptionsBlock.kCheckBoxs[idx], e = True, v = check )
+        OptionsBlock.checks[idx] = check
+    for idx, short in enumerate(optionsDefaultMaps['CST']):
+        mc.menuItem( ChannelsBlock.sMenus[idx], e = True, l = short )
+        ChannelsBlock.shorts[idx] = short
+    for idx, check in enumerate(optionsDefaultMaps['CCK']):
+        mc.checkBox( ChannelsBlock.checkBoxs[idx], e = True, v = check )
+        ChannelsBlock.checks[idx] = check
+    for idx, value in enumerate(optionsDefaultMaps['CFR']):
+        mc.menuItem( ChannelsBlock.fMenus[idx][value], e = True, rb = True )
+        ChannelsBlock.filters[idx] = value
+    mc.menuItem( MainMenu.Ign, e = True, cb = optionsDefaultMaps['IGN'] )
+    mc.menuItem( MainMenu.Ail, e = True, cb = optionsDefaultMaps['AIL'] )
 
+def optionVarsUpdate():
+    optionVarsCleanUp()
+    pm.optionVar[ optionsVariableMaps['AST'] ] = NamingBlock.contents[0]
+    pm.optionVar[ optionsVariableMaps['SDN'] ] = NamingBlock.contents[1]
+    pm.optionVar[ optionsVariableMaps['USR'] ] = NamingBlock.contents[2]
+    pm.optionVar[ optionsVariableMaps['VER'] ] = NamingBlock.contents[3]
+    pm.optionVar[ optionsVariableMaps['OPT'] ] = OptionsBlock.checks
+    pm.optionVar[ optionsVariableMaps['APR'] ] = gNameRuleMaps['APR']
+    pm.optionVar[ optionsVariableMaps['CST'] ] = ChannelsBlock.shorts
+    pm.optionVar[ optionsVariableMaps['CCK'] ] = ChannelsBlock.checks
+    pm.optionVar[ optionsVariableMaps['CFR'] ] = ChannelsBlock.filters
+    pm.optionVar[ optionsVariableMaps['BMP'] ] = gParameters['BMP']
+    pm.optionVar[ optionsVariableMaps['SNR'] ] = gNameRuleMaps['SNR']
+    pm.optionVar[ optionsVariableMaps['SGN'] ] = gNameRuleMaps['SGN']
+    pm.optionVar[ optionsVariableMaps['TEX'] ] = gNameRuleMaps['TEX']
+    pm.optionVar[ optionsVariableMaps['B2D'] ] = gNameRuleMaps['B2D']
+    pm.optionVar[ optionsVariableMaps['P2D'] ] = gNameRuleMaps['P2D']
+    pm.optionVar[ optionsVariableMaps['MIF'] ] = gNameRuleMaps['MIF']
+    pm.optionVar[ optionsVariableMaps['IGN'] ] = gParameters['IGN']
+    pm.optionVar[ optionsVariableMaps['AIL'] ] = gParameters['AIL']
+
+def optionVarsCleanUp():
+    for key in optionsVariableMaps.keys():
+        if mc.optionVar( ex = optionsVariableMaps[ key ] ):
+            mc.optionVar( remove = optionsVariableMaps[ key ] )
+# -----------------------------------------------
+# : Option variable functions end
+# -----------------------------------------------

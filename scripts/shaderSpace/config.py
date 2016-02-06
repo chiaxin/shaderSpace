@@ -1,6 +1,12 @@
 import maya.cmds
-kMayaVersion = maya.cmds.about( v = True )
-kCurrentOS = maya.cmds.about( os = True )
+
+kMayaVersion= maya.cmds.about( v = True )
+kCurrentOS  = maya.cmds.about( os = True )
+
+kVersion = '0.2.5'
+kLastUpdate = 'Feb, 06, 2016'
+
+kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
 kDegammaValue = 0.454
 
@@ -15,10 +21,10 @@ kShaderPlugins = { \
 'VRayMtl' : 'vrayformaya' }
 
 kShaderButtons = { \
-'blinn' : 'blinn',
-'mia_material_x_passes' : 'material_x',
-'aiStandard' : 'aiStandard',
-'VRayMtl' : 'VRayMtl' }
+'blinn' : 'blinn shader',
+'mia_material_x_passes' : 'material_x shader',
+'aiStandard' : 'aiStandard shader',
+'VRayMtl' : 'VRayMtl shader' }
 
 kConnectSG = { \
 'blinn' : [ ('outColor', 'surfaceShader') ],
@@ -111,12 +117,26 @@ optionsVariableMaps = { \
 'IGN' : 'shaderSpaceIgnoreTexWhenNotExistsIntOptVar', \
 'AIL' : 'shaderSpaceAlphaIsLuminaIntOptVar' }
 
-kAboutContent = \
-'Author : Chia Xin Lin\n\n' \
-'Contact : nnnight@gmail.com\n\n' \
-'Version : 0.2.3\n\n' \
-'Last Update : 01/19/2016\n\n' \
-'The Shader Space tool be able to create a shader with texture connections,' \
-'And provide some useful option and functios.If you have any questions,' \
-'even suggestions, You can send e-mail to tell me, Thanks.' \
+kChannelsPanelAnn = '''Rmb can be change short name,
+Ctrl + Rmb can be change texture filter,
+Alt + Rmb can be change bump value
+'''
 
+kOptionsPanelAnn = '''Assign ON can be assign shader when created,
+Gamma Correct ON can do gamma correct,
+Auto File ON can be set path automatically ( Rmb can be set rule ),
+Mirror ON can be set place2dTexture mirror U, V or both ( Rmb can be change )
+'''
+
+kAboutContent = '''About Shader Space
+
+Author : Chia Xin Lin
+
+Contact : nnnight@gmail.com
+
+Version : ''' + kVersion + '\n\n' + '''\
+Last Update : ''' + kLastUpdate + '\n\n' +'''\
+The Shader Space tool be able to create a shader with texture connections,
+And provide some useful option and functions. If you have any questions,
+even suggestions or requires, You can send e-mail to tell me, Thanks.
+'''

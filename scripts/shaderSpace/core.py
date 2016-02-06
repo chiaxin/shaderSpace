@@ -1,3 +1,4 @@
+import sys
 from os.path import exists
 import string
 import maya.cmds as mc
@@ -72,52 +73,70 @@ def buildPlace2dTexture(mainname, mirrorU, mirrorV):
     return p2d
 
 def createShader(nlist, stype, cnames, checks, options, filters, rules):
-    autoPathRule= rules['APR']
-    shaderRule  = rules['SNR']
-    shadingRule = rules['SGN']
-    textureRule = rules['TEX']
-    bump2dRule  = rules['B2D']
-    place2dRule = rules['P2D']
-    matinfoRule = rules['MIF']
-    assign_selected = options[0]
-    gamma_correct_on= options[1]
-    autopath_on = options[2]
-    mirror_tex = options[3]
-    bump_value = options[4]
-    ignore = options[5]
-    alpha_is_lum = options[6]
+    try:
+        autoPathRule= rules['APR']
+        shaderRule  = rules['SNR']
+        shadingRule = rules['SGN']
+        textureRule = rules['TEX']
+        bump2dRule  = rules['B2D']
+        place2dRule = rules['P2D']
+        matinfoRule = rules['MIF']
+        assign_selected = options[0]
+        gamma_correct_on= options[1]
+        autopath_on     = options[2]
+        mirror_tex      = options[3]
+        bump_value      = options[4]
+        ignore          = options[5]
+        alpha_is_lum    = options[6]
+    except:
+        sys.stderr.write( 'Failed to get options in create shader function' )
+        raise
+
     sname = substituteVariables( shaderRule, nlist )
+
     if not isVaildName( sname ):
         mc.warning('Shader name is invaild : ' + sname )
         return
     if mc.objExists( sname ):
-        ans = mc.confirmDialog( t = 'Exists', m = 'Shader is exists, continue?', 
+        ans = mc.confirmDialog( t = 'Exists', m = 'Shader is exists, continue?', \
         button=['Yes','No'], db = 'Yes', cb = 'No', ds = 'No' )
         if ans == 'No':
             return
-    sname = mc.shadingNode( stype, name = sname, asShader = True ) 
+    # Shader create
+    sname = mc.shadingNode( stype, name = sname, asShader = True )
+
+    # Shading Group create
     sengine = mc.sets( renderable = True, noSurfaceShader = True, empty = True, \
     name = substituteVariables( shadingRule, nlist ) )
+
+    # Rename material info
     material_info = mc.listConnections( sengine, s = False, d = True, type = 'materialInfo' )[0]
     material_info = mc.rename( material_info, substituteVariables( matinfoRule, nlist ) )
 
+    # Get connection pair
     connect_table = kRelatives[stype]
+
+    # Connect shader to shading group
     for grp in kConnectSG[stype]:
         print '{0} connect to {1}'.format( grp[0], grp[1] )
         mc.connectAttr( sname + '.' + grp[0], sengine + '.' + grp[1] )
 
+    # Create and connect each channels
     newTextureList = []
     for idx, pairs in enumerate( connect_table ):
         if not checks[idx]:
             continue
+
         filenode = mc.shadingNode( 'file', \
         name = substituteVariables( textureRule, nlist, cnames[idx] ), asTexture = True )
+
         aAttr = connect_table[idx][0]
         bAttr = connect_table[idx][1]
 
         # If gamma correct is on, and this texture is scalar
         if gamma_correct_on and aAttr == 'outAlpha':
-            setColorSpace( filenode, kMayaVersion )
+            if stype in [ 'blinn', 'mia_material_x_passes' ]:
+                setColorSpace( filenode, kMayaVersion )
 
         # If auto file path is on
         if autopath_on:
@@ -144,9 +163,10 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules):
                 name = substituteVariables( bump2dRule, nlist ), asUtility = True )
                 mc.connectAttr( filenode + '.' + aAttr, bump2d + '.bumpValue', f = True )
                 mc.connectAttr( bump2d + '.outNormal', sname + '.' + bAttr, f = True )
+                mc.setAttr( bump2d + '.bumpDepth', bump_value )
             elif stype in ['VRayMtl']:
                 mc.connectAttr( filenode + '.' + aAttr, sname + '.' + bAttr, f = True )
-            mc.setAttr( bump2d + '.bumpDepth', bump_value )
+                mc.setAttr( sname + '.bumpMult', bump_value )
         else:
             mc.connectAttr( filenode + '.' + aAttr, sname + '.' + bAttr )
         newTextureList.append( filenode )
@@ -173,7 +193,9 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules):
 def setColorSpace(filenode, version):
     if version in [ '2013', '2014' ]:
         mc.setAttr( filenode + '.colorProfile', 2 )
-    elif version in [ '2015', '2016' ]:
+    elif version in [ '2015' ]:
+        mc.setAttr( filenode + '.colorSpace', 'Raw', typ = 'string' )
+    elif version in [ '2016' ]:
         pass
     else:
         pass

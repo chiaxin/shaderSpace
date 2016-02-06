@@ -50,7 +50,7 @@ def exportShaders(export_path, mode):
         mc.select( cl = True )
         print('Export : {0} > {1}'.format( sg, fullpath ) )
 
-def exportPolygons(export_path, export_type, exclude, include):
+def exportPolygons(export_path, export_type, exclude, include, group):
     if not export_path:
         mc.warning( 'Please enter a output folder!' )
         return
@@ -84,33 +84,33 @@ def exportPolygons(export_path, export_type, exclude, include):
     else:
         mc.warning( 'Failed : Unknown export type : {0}'.format( export_type ) )
 
-    visible_displaylayers = [ d for d in mc.ls( type = 'displayLayer' ) \
-    if mc.getAttr( d + '.visibility' ) ]
-    visible_displaylayers.remove('defaultLayer')
+    pairs_mesh = {}
 
-    if len(visible_displaylayers) == 0:
-        mc.warning('Not any visible display layer was found')
+    if group == 1:
+        pairs_mesh = getPolygonsFromDisplayLayers()
+    elif group == 2:
+        pairs_mesh = getPolygonsFromSets()
+
+    if not pairs_mesh:
         return
 
-    ans = mc.confirmDialog( t = 'Export Meshes', m = '\n'.join( visible_displaylayers ), \
+    ans = mc.confirmDialog( t = 'Export Meshes', m = '\n'.join( pairs_mesh.keys() ), \
     button=['Yes','No'], db = 'Yes', cb = 'No', ds = 'No' )
     if ans == 'No':
         return
 
     store_selections = mc.ls( sl = True )
-    for dl in visible_displaylayers:
-        itemsInLayer = mc.editDisplayLayerMembers( dl, q = True, fn = True )
-        if itemsInLayer is None:
-            mc.warning( 'Display-layer empty : {0}'.format( dl ) )
-            continue
+
+    for key in pairs_mesh.keys():
         mc.select( cl = True )
-        fullpath = '{0}/{1}.{2}'.format( export_path, dl, export_info['ext'] )
-        for under in itemsInLayer:
-            if mc.nodeType( under ) not in [ 'mesh', 'transform' ]:
-                continue
-            short = under.split('|')[-1]
-            if short.find( include ) >= 0 and short.find( exclude ) < 0:
-                mc.select( under, add = True )
+
+        fullpath = '{0}/{1}.{2}'.format( export_path, key, export_info['ext'] )
+
+        for item in pairs_mesh[ key ]:
+            shortName = item.split('|')[-1]
+            if shortName.find( include ) >= 0 and shortName.find( exclude ) < 0:
+                mc.select( item, add = True )
+
         if len( mc.ls( sl = True ) ) == 0:
             continue
         try:
@@ -129,42 +129,38 @@ def exportPolygons(export_path, export_type, exclude, include):
     if store_selections:
         mc.select( store_selections, r = True )
 
-def uvSnapshot(export_path, res, ext, color):
+def uvSnapshot(export_path, res, ext, color, group):
     if not export_path:
         mc.warning( 'Please enter a output folder!' )
         return
     if not exists(export_path):
         mc.warning( 'The directory is not exists : {0}'.format(export_path) )
         return
-    visible_displaylayers = [ d for d in mc.ls(type='displayLayer') \
-    if mc.getAttr( d + '.visibility' ) ]
 
-    visible_displaylayers.remove('defaultLayer')
+    pairs_mesh = {}
 
-    if not visible_displaylayers:
-        mc.warning('Not any visible display-layers found')
+    if group == 1:
+        pairs_mesh = getPolygonsFromDisplayLayers()
+    elif group == 2:
+        pairs_mesh = getPolygonsFromSets()
+
+    if not pairs_mesh:
+        mc.warning( 'No any meshs hcan be snapshot' )
         return
 
-    ans = mc.confirmDialog( t = 'UV Snapshot', m = '\n'.join( visible_displaylayers ), \
+    ans = mc.confirmDialog( t = 'UV Snapshot', m = '\n'.join( pairs_mesh.keys() ), \
     button=['Yes','No'], db = 'Yes', cb = 'No', ds = 'No' )
     if ans == 'No':
         return
-    store_selections = mc.ls(sl=True)
 
-    for dl in visible_displaylayers:
+    store_selections = mc.ls( sl = True )
+
+    for key in pairs_mesh.keys():
         mc.select( cl = True )
-        fullpath = '{0}/{1}.{2}'.format( export_path, dl, ext )
-        itemsInLayer = mc.editDisplayLayerMembers( dl, q = True, fn = True )
-        if itemsInLayer is None:
-            mc.warning( 'Display-layer empty : {0}'.format( dl ) )
-            continue
-        items = [ o for o in itemsInLayer if mc.nodeType( o ) in [ 'mesh', 'transform' ] ]
-        if not items:
-            mc.warning( 'This display-layer has no any vaild mesh : {0}'.format(dl) )
-            continue
+        fullpath = '{0}/{1}.{2}'.format( export_path, key , ext )
         try:
-            mc.select( items, r = True )
-            mc.uvSnapshot(overwrite=True, \
+            mc.select( pairs_mesh[ key ], r = True )
+            mc.uvSnapshot( overwrite = True, \
             redColor = color[0], greenColor = color[1], blueColor = color[2], \
             xResolution = res, yResolution = res, fileFormat = ext, name = fullpath )
         except:
@@ -204,3 +200,54 @@ def createPhotoshopFile(export_path, uv_path, channels, res):
         mel.eval( execution )
     except:
         raise
+
+def getPolygonsFromDisplayLayers():
+    visible_displaylayers = [ d for d in mc.ls(type='displayLayer') \
+    if mc.getAttr( d + '.visibility' ) and d not in ['defaultLayer'] ]
+
+    if not visible_displaylayers:
+        return {}
+
+    polygonCollections = {}
+
+    for dl in visible_displaylayers:
+        itemsInLayer = mc.editDisplayLayerMembers( dl, q = True, fn = True )
+        if not itemsInLayer:
+            continue
+        items = [ o for o in itemsInLayer if mc.nodeType( o ) in [ 'mesh', 'transform' ] ]
+        if not items:
+            continue
+        collections = []
+        for item in items:
+            if mc.nodeType( item ) == 'mesh':
+                collections.append( item )
+            elif mc.nodeType( item ) == 'transform':
+                relatives = mc.listRelatives( item, ad = True, type = 'mesh', ni = True, f = True )
+                collections.extend( relatives )
+        if collections:
+            polygonCollections[ dl ] = collections
+    return polygonCollections
+
+def getPolygonsFromSets():
+    all_sets = [ s for s in mc.ls( type = 'objectSet' ) if mc.nodeType(s) == 'objectSet' and\
+    s not in [ 'defaultLightSet', 'defaultObjectSet' ] ]
+
+    if not all_sets:
+        return {}
+
+    polygonCollections = {}
+
+    for se in all_sets:
+        collections = []
+        itemsInSet = [ o for o in mc.sets( se, q = True ) if mc.nodeType( o ) in ['mesh', 'transform' ] ]
+        if not itemsInSet:
+            continue
+        for item in itemsInSet:
+            if mc.nodeType( item ) == 'mesh':
+                collections.append( item )
+            elif mc.nodeType( item ) == 'transform':
+                relatives = mc.listRelatives( item, ad = True, type = 'mesh', ni = True, f = True )
+                collections.extend( relatives )
+        if collections:
+            polygonCollections[ se ] = collections
+    return polygonCollections
