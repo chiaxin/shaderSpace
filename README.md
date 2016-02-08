@@ -25,21 +25,3 @@ Maya 2014, 2015, 2016
 #OS Support
 
 Windows
-
-#Update
-
-ver 0.2.2 : Jan/ 21/ 2016
-
-    1. Add try & except block, try to fix some problems about optionVar.
-
-    2. Fix some tools bugs
-
-ver 0.2.3 : Feb/ 06/ 2016
-
-    1. Refine serval problems
-
-ver 0.2.5 : Feb/ 06/ 2016
-
-    1. The function export mesh and uvsnapshot can be support sets now.
-    
-    2. Fix some UI problems

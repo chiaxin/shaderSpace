@@ -12,15 +12,18 @@ class BaseUI:
         if uit is not None:
             uit.build()
             uit.push()
-        if menu is not None:
-            menu.build()
+
+        if menu is not None: menu.build()
+
         self.Frl = mc.frameLayout( self.Frl )
+
         if blocks is not None and len(blocks):
             for block in blocks:
                 block.build()
+
         mc.setParent('..')
-        if uit is not None:
-            uit.pop()
+
+        if uit is not None: uit.pop()
 
     def destroy(self):
         if self.exists():

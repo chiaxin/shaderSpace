@@ -4,6 +4,7 @@ from config import kAboutContent, kShaderPlugins, kShaderButtons
 from config import kChannelNames, kVersion, kWebsite
 from config import kChannelsPanelAnn, kOptionsPanelAnn
 from core import isVaildName, substituteVariables, createShader
+import re
 import string
 import base
 import tools
@@ -79,18 +80,23 @@ class MainUIT( base.BaseUIT ):
     Uit = 'shaderSpaceMainUIT'
 
 class MainMenu:
+    Col = 'shaderSpaceMainMenuCol'
+    Bar = 'shaderSpaceMainMenuBar'
     Ign = 'shaderSpaceIgnCheck'
     Ail = 'shaderSpaceAilCheck'
     def build(self):
-        mc.menuBarLayout()
+        self.Col = mc.columnLayout( self.Col)
+        self.Bar = mc.menuBarLayout( self.Bar )
+
         mc.menu( l = 'Edit' )
-        mc.menuItem( l = 'Save Settings',   c = lambda *args : optionVarsUpdate()   )
-        mc.menuItem( l = 'Restore Settings',c = lambda *args : settingRestore()     )
+        mc.menuItem( l = 'Save',    c = lambda *args : optionVarsUpdate()   )
+        mc.menuItem( l = 'Reset',   c = lambda *args : settingReset()       )
         mc.menuItem( d = True )
-        mc.menuItem( l = 'Export Settings', c = lambda *args : exportSetting()      )
-        mc.menuItem( l = 'Load Settings',   c = lambda *args : loadSetting(), en = False )
+        mc.menuItem( l = 'Export',  c = lambda *args : exportSetting()      )
+        mc.menuItem( l = 'Load',    c = lambda *args : loadSetting()        )
         mc.menuItem( d = True )
-        mc.menuItem( l = 'Clean Settings',  c = lambda *args : optionVarsCleanUp()  )
+        mc.menuItem( l = 'Clean',   c = lambda *args : optionVarsCleanUp()  )
+
         mc.menu( l = 'Preferences' )
         mc.menuItem( l = 'Node Name Change', sm = True, to = True )
         mc.menuItem( l = 'Shader',          c = lambda *args : openRuleSetting( 'SNR', 'Shader') )
@@ -104,6 +110,7 @@ class MainMenu:
         cb = bool( gParameters['IGN'] ), c = lambda * args : self.toggleIGN() )
         self.Ail = mc.menuItem( self.Ail, l = 'Alpha Is Luminance in outAlpha', \
         cb = bool( gParameters['AIL'] ), c = lambda *args : self.toggleAIL() )
+
         mc.menu( l = 'Tools' )
         mc.menuItem( l = 'UV Snap Shot', \
         c = partial( openTools, 'uvsnapshot', 'Batch UV Snapshot' ) )
@@ -113,9 +120,13 @@ class MainMenu:
         c = partial( openTools, 'exportShader', 'Export Shaders' ) )
         mc.menuItem( l = 'Create PSD', \
         c = partial( openTools, 'createPsd', 'Create Photoshop File' ) )
+
         mc.menu( l = 'Help' )
         mc.menuItem( l ='Help',  c = lambda *args : openHelp() )
         mc.menuItem( l ='About', c = lambda *args : openAbout() )
+
+        mc.setParent('..')
+        mc.setParent('..')
 
     def toggleIGN(self):
         gParameters['IGN'] = mc.menuItem(self.Ign, q = True, cb = True ) 
@@ -492,7 +503,6 @@ class SubRuleBlock( base.BaseBlock ):
             mc.textField( self.ruleField, e = True, tx = gNameRuleMaps[self.ruletype] )
             return False, 'Path can not be empty!'
         elif user_input.find('<channel>') != -1 and self.ruletype not in ['APR', 'TEX']:
-            #mc.textField( self.ruleField, e = True, tx = gNameRuleMaps[self.ruletype] )
             return False, '<channel> is for texture node or path only!'
         instead_path = substituteVariables( user_input, ['_', '_', '_', '_'], 'channel' )
         if not isVaildName( instead_path ) and self.ruletype != 'APR':
@@ -523,6 +533,7 @@ class SubRuleMenu:
         mc.menuItem( l = 'Restore', \
         c = lambda *args : mc.textField( SubRuleBlock.ruleField, e = True, \
         tx = optionsDefaultMaps[self.ruletype] ) )
+        mc.setParent('..')
 
 class IntroBlock( base.BaseBlock ):
     Frl = 'shaderSpaceIntroFrl'
@@ -581,6 +592,7 @@ class ToolsMenu:
         mc.menuBarLayout()
         mc.menu( l = 'Help' )
         mc.menuItem( l = 'How to use', c = lambda *args : self.help() )
+        mc.setParent('..')
 
     def help(self):
         pass
@@ -793,25 +805,84 @@ def exportSetting():
         f = open( config_files[0], 'w' )
         f.write('## Shader Space Options\n')
         for pairs in zip( kChannelNames, ChannelsBlock.shorts ):
-            f.write( pairs[0] + '->' + pairs[1] + '\n' )
+            f.write( 'let ' + pairs[0] + '=' + pairs[1] + '\n' )
+
         for idx, channel in enumerate(kChannelNames):
-            f.write( channel + ':' + ChannelsBlock.kFILTERS[ ChannelsBlock.filters[idx] ] + '\n' )
-        f.write( 'Shader:' + gNameRuleMaps['SNR'] + '\n')
-        f.write( 'ShadingEngine:' + gNameRuleMaps['SGN'] + '\n')
-        f.write( 'Texture:' + gNameRuleMaps['TEX'] + '\n')
-        f.write( 'Bump2d:' + gNameRuleMaps['B2D'] + '\n')
-        f.write( 'Place2dTexture:' + gNameRuleMaps['P2D'] + '\n' )
-        f.write( 'MaterialInfo:' + gNameRuleMaps['MIF'] + '\n' )
-        f.write( 'BumpDepth:' + str(gParameters['BMP']) + '\n' )
+            f.write( 'filter ' + channel + '=' + \
+            ChannelsBlock.kFILTERS[ ChannelsBlock.filters[idx] ] + '\n' )
+
+        f.write( 'set Shader='          + gNameRuleMaps['SNR'] + '\n')
+        f.write( 'set ShadingEngine='   + gNameRuleMaps['SGN'] + '\n')
+        f.write( 'set Texture='         + gNameRuleMaps['TEX'] + '\n')
+        f.write( 'set Bump2d='          + gNameRuleMaps['B2D'] + '\n')
+        f.write( 'set Place2dTexture='  + gNameRuleMaps['P2D'] + '\n')
+        f.write( 'set MaterialInfo='    + gNameRuleMaps['MIF'] + '\n')
     except:
         raise
     print('Shader space option has been saved. : {0}'.format( config_files[0] ) )
     f.close()
 
 def loadSetting():
-    pass
+    def analysisLet(para, value):
+        for idx, channel in enumerate( kChannelNames ):
+            if para == channel:
+                if not isVaildName( value ):
+                    print 'The {0} is invaild name, skip'.format( value )
+                    return
+                elif ChannelsBlock.shorts[idx] == value:
+                    return
+                else:
+                    ChannelsBlock.shorts[idx] = value
+                    mc.menuItem( ChannelsBlock.sMenus[idx], e = True, l = value )
+                    print 'The channel short name has been changed : {0}'.format(value)
+    def analysisFilter(para, value):
+        for idx, channel in enumerate( kChannelNames ):
+            if para == channel:
+                if value in ChannelsBlock.kFILTERS:
+                    if ChannelsBlock.kFILTERS.index(value) != ChannelsBlock.filters[idx]:
+                        filter_index = ChannelsBlock.kFILTERS.index(value)
+                        ChannelsBlock.filters[idx] = filter_index
+                        mc.menuItem( ChannelsBlock.fMenus[idx][filter_index], e = True, rb = True )
+                        print '{0} channel filter has been changed : {1}'.format( channel, value )
+    def analysisSet(para, value):
+        key = ''
+        if para == 'Shader':            key = 'SNR'
+        elif para == 'ShadingEngine':   key = 'SGN'
+        elif para == 'Texture':         key = 'TEX'
+        elif para == 'Bump2d':          key = 'B2D'
+        elif para == 'place2dTexture':  key = 'P2D'
+        elif para == 'MaterialInfo':    key = 'MIF'
+        else: return
+        instead_path = substituteVariables( value, ['_', '_', '_', '_'], 'channel' )
+        if isVaildName( instead_path ):
+            gNameRuleMaps[ key ] = value
+        else:
+            print 'This is invaild path rule : {0}, skip'.format( value )
+    ssoFilter = 'Shader Space Options (*.sso)'
+    config_files = mc.fileDialog2( ff = ssoFilter, ds = 2, cap = 'Load configuration', \
+    dir = mc.workspace( q = True, rd = True ), fm = 1 )
+    if not config_files:
+        return
+    try:
+        count, limited = 0, 100
+        syntaxParser = re.compile(r'(let|filter|set) (\w+)\s*=\s*([\w<>]+)')
+        f = open( config_files[0], 'r' )
+        while count < limited:
+            curline = f.readline()
+            if not curline: break
+            parser = syntaxParser.match(curline)
+            if parser:
+                if parser.group(1)   == 'let':      analysisLet( parser.group(2), parser.group(3) )
+                elif parser.group(1) == 'filter':   analysisFilter( parser.group(2), parser.group(3) )
+                elif parser.group(1) == 'set':      analysisSet( parser.group(2), parser.group(3) )
+            else:
+                print parser
+    except:
+        raise
+    print('Shader space option has been loaded. : {0}'.format( config_files[0] ) )
+    f.close()
 
-def settingRestore():
+def settingReset():
     ans = mc.confirmDialog( t = 'Restore Options', m = 'Restore All Options?', 
     button=['Yes','No'], db = 'Yes', cb = 'No', ds = 'No' )
     if ans == 'No': return

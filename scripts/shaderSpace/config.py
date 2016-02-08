@@ -3,7 +3,7 @@ import maya.cmds
 kMayaVersion= maya.cmds.about( v = True )
 kCurrentOS  = maya.cmds.about( os = True )
 
-kVersion = '0.2.5'
+kVersion = '0.2.6'
 kLastUpdate = 'Feb, 06, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
@@ -12,7 +12,7 @@ kDegammaValue = 0.454
 
 kChannelNames = ( \
 'Color', 'Bump', 'Roughness', 'Glossiness', 'Reflectivity', \
-'Reflection Color', 'Specular Color', 'Transparency', 'Incandescence' )
+'ReflectionColor', 'SpecularColor', 'Transparency', 'Incandescence' )
 
 kShaderPlugins = { \
 'blinn' : 'none',
