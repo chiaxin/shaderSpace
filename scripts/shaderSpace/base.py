@@ -67,7 +67,6 @@ class BaseUIT:
 
 class BaseBlock:
     Frl = 'BLOCK_FRL'
-    Col = 'BLOCK_COL'
     Label = 'Base Block'
     width = 256
     height= 128

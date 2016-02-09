@@ -11,3 +11,8 @@ ver 0.2.5 : Feb/ 06/ 2016
 
 ver 0.2.6 : Feb/ 08/ 2016
     1. load configuration function has been implemented.
+
+ver 0.2.7 : Feb/ 09/ 2016
+    1. Refine some UI detail
+    2. Fix save options problems
+    3. Fix load options problems

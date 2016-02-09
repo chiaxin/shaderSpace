@@ -88,7 +88,7 @@ class MainMenu:
         self.Col = mc.columnLayout( self.Col)
         self.Bar = mc.menuBarLayout( self.Bar )
 
-        mc.menu( l = 'Edit' )
+        mc.menu( l = 'File' )
         mc.menuItem( l = 'Save',    c = lambda *args : optionVarsUpdate()   )
         mc.menuItem( l = 'Reset',   c = lambda *args : settingReset()       )
         mc.menuItem( d = True )
@@ -97,7 +97,7 @@ class MainMenu:
         mc.menuItem( d = True )
         mc.menuItem( l = 'Clean',   c = lambda *args : optionVarsCleanUp()  )
 
-        mc.menu( l = 'Preferences' )
+        mc.menu( l = 'Edit' )
         mc.menuItem( l = 'Node Name Change', sm = True, to = True )
         mc.menuItem( l = 'Shader',          c = lambda *args : openRuleSetting( 'SNR', 'Shader') )
         mc.menuItem( l = 'Shading Group',   c = lambda *args : openRuleSetting( 'SGN', 'Shading Group' ) )
@@ -129,10 +129,10 @@ class MainMenu:
         mc.setParent('..')
 
     def toggleIGN(self):
-        gParameters['IGN'] = mc.menuItem(self.Ign, q = True, cb = True ) 
+        gParameters['IGN'] = int( mc.menuItem(self.Ign, q = True, cb = True ) )
 
     def toggleAIL(self):
-        gParameters['AIL'] = mc.menuItem(self.Ail, q = True, cb = True )
+        gParameters['AIL'] = int( mc.menuItem(self.Ail, q = True, cb = True ) )
 
 class NamingBlock( base.BaseBlock ):
     Frl = 'shaderSpaceNamingFRL'
@@ -248,7 +248,7 @@ class OptionsBlock( base.BaseBlock ):
         ui.show()
 
     def toggle(self, *args):
-        self.checks[ args[0] ] = mc.checkBox( self.kCheckBoxs[ args[0] ], q = True, v = True )
+        self.checks[ args[0] ] = int( mc.checkBox( self.kCheckBoxs[ args[0] ], q = True, v = True ) )
 
     def mirrorSwitch(self, *args):
         gParameters['MIR'] = args[0]
@@ -452,16 +452,18 @@ class ActionsBlock( base.BaseBlock ):
 # : Rule setting window define
 # -----------------------------------------------
 class SubRuleUI( base.BaseUI ):
-    Win = 'shaderSpaceRuleUI'
+    Win = 'shaderSpaceRuleWIN'
+    Frl = 'sahderSpaceRuleFRL'
     width = 420
     height= 200
 
 class SubRuleBlock( base.BaseBlock ):
-    Col = 'RULE_COL'
-    width = 400
-    height = 120
+    Frl = 'shaderSpaceRuleBlockFRL'
+    Col = 'shaderSpaceRuleBlockCol'
     ruleField   = 'shaderSpacePathRuleTF'
     previewField= 'shaderSPacePathPreviewTT'
+    width = 400
+    height = 120
 
     def __init__(self, ruletype):
         self.ruletype = ruletype
@@ -542,7 +544,7 @@ class IntroBlock( base.BaseBlock ):
     height= 180
 
     def content(self):
-        mc.columnLayout()
+        self.Col = mc.columnLayout( self.Col )
         mc.text( l = r'All Variabies :' )
         mc.text( l = r'<root> : Project path' )
         mc.text( l = r'<asset> : Asset Name' )
@@ -561,6 +563,13 @@ class SubWinUIT( base.BaseUIT ):
         mc.text( dt = self.Uit, w = 100, font = 'fixedWidthFont', al = 'left' )
         mc.frameLayout( dt = self.Uit, lv = False, cl = False, cll = False, mh = 5, mw = 5 )
         mc.columnLayout( dt = self.Uit, adj = True , rs = 5, cal = 'center' )
+
+def openRuleSetting(ruletype, title):
+    ruleWin = SubRuleUI()
+    blocks = [ SubRuleBlock(ruletype), IntroBlock() ]
+    menu = SubRuleMenu(ruletype)
+    ruleWin.build( menu, blocks, SubWinUIT(), title )
+    ruleWin.show()
 # -----------------------------------------------
 # : Rule setting window end
 # -----------------------------------------------
@@ -575,10 +584,10 @@ class ToolsUI( base.BaseUI ):
     height= 200
 
 class ToolsBlcok( base.BaseBlock ):
-    width = 400
-    height= 180
     Col = 'shaderSpaceToolsBlockCOL'
     pathFieldTFB = 'shaderSpaceToolsPathTFB'
+    width = 400
+    height= 180
     root = mc.workspace( q = True, rd = True )
 
     def browse(self):
@@ -756,32 +765,29 @@ def openTools(tool, title, *args):
 
 class AboutUI( base.BaseUI ):
     Win = 'shaderSpaceAboutWIN'
+    Frl = 'shaderSpaceAboutFRL'
     height= 320
     width = 300
 
 class AboutBlock( base.BaseBlock ):
+    Frl = 'shaderSpaceAboutBlockFRL'
+    Col = 'shaderSpaceAboutBlockCOL'
+    Label = 'About'
     height= 260
     width = 320
-    Label = 'About'
+
     def content(self):
-        mc.columnLayout()
+        self.Col = mc.columnLayout( self.Col )
         mc.scrollField( ed = False, ww = True, w = 300, h = 240, text = kAboutContent )
         mc.setParent('..')
         mc.rowLayout( nc = 2 )
-        mc.button( l = 'Website', w = 90, h = 30, c = lambda *args : mc.launch( web = kWebsite ) )
-        mc.button( l = 'OK', w = 90, h = 30, c = lambda *args : self.close() )
+        mc.button( l = 'Website', w = 100, h = 30, c = lambda *args : mc.launch( web = kWebsite ) )
+        mc.button( l = 'OK', w = 100, h = 30, c = lambda *args : self.close() )
         mc.setParent('..')
 
     def close(self):
         if mc.window( AboutUI.Win, q = True, exists = True ):
             mc.deleteUI( AboutUI.Win )
-
-def openRuleSetting(ruletype, title):
-    ruleWin = SubRuleUI()
-    blocks = [ SubRuleBlock(ruletype), IntroBlock() ]
-    menu = SubRuleMenu(ruletype)
-    ruleWin.build( menu, blocks, SubWinUIT(), title )
-    ruleWin.show()
 
 def openAbout(*args):
     aboutWin = AboutUI()
@@ -793,7 +799,7 @@ def openHelp(*args):
     pass
 
 # -----------------------------------------------
-# : Option variable functions
+# : Export & Load setting functions
 # -----------------------------------------------
 def exportSetting():
     ssoFilter = 'Shader Space Options (*.sso)'
@@ -803,7 +809,7 @@ def exportSetting():
         return
     try:
         f = open( config_files[0], 'w' )
-        f.write('## Shader Space Options\n')
+        f.write('# Shader Space Options\n')
         for pairs in zip( kChannelNames, ChannelsBlock.shorts ):
             f.write( 'let ' + pairs[0] + '=' + pairs[1] + '\n' )
 
@@ -832,18 +838,30 @@ def loadSetting():
                 elif ChannelsBlock.shorts[idx] == value:
                     return
                 else:
-                    ChannelsBlock.shorts[idx] = value
-                    mc.menuItem( ChannelsBlock.sMenus[idx], e = True, l = value )
-                    print 'The channel short name has been changed : {0}'.format(value)
+                    menuitem = ChannelsBlock.sMenus[idx]
+                    if mc.menuItem( menuitem, q = True, ex = True ):
+                        ChannelsBlock.shorts[idx] = value
+                        mc.menuItem( ChannelsBlock.sMenus[idx], e = True, l = value )
+                        print '[load] The channel short name has been changed : {0}'.format(value)
+                    else:
+                        print '[error] The menuItem not found, ignore : {1}'.format( menuitem )
+
     def analysisFilter(para, value):
         for idx, channel in enumerate( kChannelNames ):
             if para == channel:
-                if value in ChannelsBlock.kFILTERS:
-                    if ChannelsBlock.kFILTERS.index(value) != ChannelsBlock.filters[idx]:
-                        filter_index = ChannelsBlock.kFILTERS.index(value)
+                if value not in ChannelsBlock.kFILTERS: return
+
+                filter_index = ChannelsBlock.kFILTERS.index(value)
+
+                if filter_index != ChannelsBlock.filters[idx]:
+                    menuitem = ChannelsBlock.fMenus[ idx ][ filter_index ]
+                    if mc.menuItem( menuitem, q = True, ex = True ):
+                        mc.menuItem( menuitem, e = True, rb = True )
                         ChannelsBlock.filters[idx] = filter_index
-                        mc.menuItem( ChannelsBlock.fMenus[idx][filter_index], e = True, rb = True )
-                        print '{0} channel filter has been changed : {1}'.format( channel, value )
+                        print '[load] The {0} channel filter has been changed : {1}'.format( channel, value )
+                    else:
+                        print '[error] The menuItem not found, ignore : {1}'.format( menuitem )
+
     def analysisSet(para, value):
         key = ''
         if para == 'Shader':            key = 'SNR'
@@ -857,7 +875,8 @@ def loadSetting():
         if isVaildName( instead_path ):
             gNameRuleMaps[ key ] = value
         else:
-            print 'This is invaild path rule : {0}, skip'.format( value )
+            print '[error] This is invaild rule : {0}, skip'.format( value )
+
     ssoFilter = 'Shader Space Options (*.sso)'
     config_files = mc.fileDialog2( ff = ssoFilter, ds = 2, cap = 'Load configuration', \
     dir = mc.workspace( q = True, rd = True ), fm = 1 )
@@ -876,12 +895,18 @@ def loadSetting():
                 elif parser.group(1) == 'filter':   analysisFilter( parser.group(2), parser.group(3) )
                 elif parser.group(1) == 'set':      analysisSet( parser.group(2), parser.group(3) )
             else:
-                print parser
+                pass
     except:
         raise
     print('Shader space option has been loaded. : {0}'.format( config_files[0] ) )
     f.close()
+# -----------------------------------------------
+# : Export & Load setting function end
+# -----------------------------------------------
 
+# -----------------------------------------------
+# : Option variable functions
+# -----------------------------------------------
 def settingReset():
     ans = mc.confirmDialog( t = 'Restore Options', m = 'Restore All Options?', 
     button=['Yes','No'], db = 'Yes', cb = 'No', ds = 'No' )
@@ -929,6 +954,47 @@ def optionVarsUpdate():
     pm.optionVar[ optionsVariableMaps['MIF'] ] = gNameRuleMaps['MIF']
     pm.optionVar[ optionsVariableMaps['IGN'] ] = gParameters['IGN']
     pm.optionVar[ optionsVariableMaps['AIL'] ] = gParameters['AIL']
+
+# For debug
+def _printAllOptionVar():
+    print pm.optionVar[ optionsVariableMaps['AST'] ]
+    print pm.optionVar[ optionsVariableMaps['SDN'] ]
+    print pm.optionVar[ optionsVariableMaps['USR'] ]
+    print pm.optionVar[ optionsVariableMaps['VER'] ]
+    print pm.optionVar[ optionsVariableMaps['OPT'] ]
+    print pm.optionVar[ optionsVariableMaps['APR'] ]
+    print pm.optionVar[ optionsVariableMaps['CST'] ]
+    print pm.optionVar[ optionsVariableMaps['CCK'] ]
+    print pm.optionVar[ optionsVariableMaps['CFR'] ]
+    print pm.optionVar[ optionsVariableMaps['BMP'] ]
+    print pm.optionVar[ optionsVariableMaps['SNR'] ]
+    print pm.optionVar[ optionsVariableMaps['SGN'] ]
+    print pm.optionVar[ optionsVariableMaps['TEX'] ]
+    print pm.optionVar[ optionsVariableMaps['B2D'] ]
+    print pm.optionVar[ optionsVariableMaps['P2D'] ]
+    print pm.optionVar[ optionsVariableMaps['MIF'] ]
+    print pm.optionVar[ optionsVariableMaps['IGN'] ]
+    print pm.optionVar[ optionsVariableMaps['AIL'] ]
+
+def _printAllOptions():
+    print NamingBlock.contents[0]
+    print NamingBlock.contents[1]
+    print NamingBlock.contents[2]
+    print NamingBlock.contents[3]
+    print OptionsBlock.checks
+    print gNameRuleMaps['APR']
+    print ChannelsBlock.shorts
+    print ChannelsBlock.checks
+    print ChannelsBlock.filters
+    print gParameters['BMP']
+    print gNameRuleMaps['SNR']
+    print gNameRuleMaps['SGN']
+    print gNameRuleMaps['TEX']
+    print gNameRuleMaps['B2D']
+    print gNameRuleMaps['P2D']
+    print gNameRuleMaps['MIF']
+    print gParameters['IGN']
+    print gParameters['AIL']
 
 def optionVarsCleanUp():
     for key in optionsVariableMaps.keys():
