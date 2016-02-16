@@ -3,8 +3,8 @@ import maya.cmds
 kMayaVersion= maya.cmds.about( v = True )
 kCurrentOS  = maya.cmds.about( os = True )
 
-kVersion = '0.2.7'
-kLastUpdate = 'Feb, 09, 2016'
+kVersion = '0.2.8'
+kLastUpdate = 'Feb, 16, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
@@ -39,22 +39,22 @@ kRelatives = { \
 'blinn' : [ \
 ('outColor', 'color'),\
 ('outAlpha', 'normalCamera'),\
-('outColor', 'reflectedColor'),\
-('outAlpha', 'specularRollOff'),\
-('outAlpha', 'eccentricity'),\
-('outColor', 'transparency'),\
-('outColor', 'specularColor'),\
 ('outAlpha', 'reflectivity'),\
+('outAlpha', 'eccentricity'),\
+('outAlpha', 'specularRollOff'),\
+('outColor', 'reflectedColor'),\
+('outColor', 'specularColor'),\
+('outColor', 'transparency'),\
 ('outColor', 'incandescence') ], \
 'mia_material_x_passes' : [ \
 ('outColor', 'diffuse'),\
 ('outAlpha', 'standard_bump'),\
-('outAlpha', 'reflectivity'),\
-('outAlpha', 'refl_gloss'),\
 ('outAlpha', 'diffuse_roughness'),\
-('outAlpha', 'transparency'),\
+('outAlpha', 'refl_gloss'),\
+('outAlpha', 'reflectivity'),\
 ('outColor', 'refl_color'),\
 ('outColor', 'refl_falloff_color'),\
+('outAlpha', 'transparency'),\
 ('outColor', 'additional_color') ], \
 'aiStandard' : [ \
 ('outColor', 'color'),\

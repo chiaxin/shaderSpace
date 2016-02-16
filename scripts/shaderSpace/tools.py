@@ -58,9 +58,9 @@ def exportPolygons(export_path, export_type, exclude, include, group):
         mc.warning( 'Directory is not exists : {0}'.format( export_path ) )
         return
 
-    objExportPlug = mc.pluginInfo('objExport', query=True, loaded=True)
+    objExportPlugin = mc.pluginInfo('objExport', query=True, loaded=True)
 
-    if export_type == 'obj' and not objExportPlug:
+    if export_type == 'obj' and not objExportPlugin:
         load_plugins = mc.loadPlugin('objExport')
         if load_plugin[0] != 'objExport':
             mc.warning('obj export plugin load failed')
@@ -108,7 +108,8 @@ def exportPolygons(export_path, export_type, exclude, include, group):
 
         for item in pairs_mesh[ key ]:
             shortName = item.split('|')[-1]
-            if shortName.find( include ) >= 0 and shortName.find( exclude ) < 0:
+            if len(include) == 0 or shortName.find( include ) >= 0 and \
+            len(exclude) == 0 or shortName.find( exclude ) == -1:
                 mc.select( item, add = True )
 
         if len( mc.ls( sl = True ) ) == 0:
@@ -120,7 +121,7 @@ def exportPolygons(export_path, export_type, exclude, include, group):
             raise
         print( 'The meshes have been exported : ' + fullpath )
 
-    if objExportPlug is not True:
+    if objExportPlugin is not True:
         unloaded_plugins = mc.unloadPlugin('objExport')
         if unloaded_plugins[0] == 'objExport':
             print('Unload plug-in : objExport')
@@ -145,7 +146,7 @@ def uvSnapshot(export_path, res, ext, color, group):
         pairs_mesh = getPolygonsFromSets()
 
     if not pairs_mesh:
-        mc.warning( 'No any meshs hcan be snapshot' )
+        mc.warning( 'No any meshs can be snapshot' )
         return
 
     ans = mc.confirmDialog( t = 'UV Snapshot', m = '\n'.join( pairs_mesh.keys() ), \
