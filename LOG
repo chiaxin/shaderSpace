@@ -16,3 +16,7 @@ ver 0.2.7 : Feb/ 09/ 2016
     1. Refine some UI detail
     2. Fix save options problems
     3. Fix load options problems
+
+ver 0.2.8 : Feb/ 16/ 2016
+    1. Fix problems of export mesh
+    2. Fix relatives of material's channel connections
