@@ -115,11 +115,12 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules):
 
     # Get connection pair
     connect_table = kRelatives[stype]
+    connect_sg = kConnectSG[stype]
 
     # Connect shader to shading group
-    for grp in kConnectSG[stype]:
-        print '{0} connect to {1}'.format( grp[0], grp[1] )
-        mc.connectAttr( sname + '.' + grp[0], sengine + '.' + grp[1] )
+    for pair in connect_sg:
+        print '{0} connect to {1}'.format( pair[0], pair[1] )
+        mc.connectAttr( sname + '.' + pair[0], sengine + '.' + pair[1] )
 
     # Create and connect each channels
     newTextureList = []
@@ -130,8 +131,8 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules):
         filenode = mc.shadingNode( 'file', \
         name = substituteVariables( textureRule, nlist, cnames[idx] ), asTexture = True )
 
-        aAttr = connect_table[idx][0]
-        bAttr = connect_table[idx][1]
+        aAttr = pairs[0]
+        bAttr = pairs[1]
 
         # If gamma correct is on, and this texture is scalar
         if gamma_correct_on and aAttr == 'outAlpha':
