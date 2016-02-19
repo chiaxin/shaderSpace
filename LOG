@@ -20,3 +20,7 @@ ver 0.2.7 : Feb/ 09/ 2016
 ver 0.2.8 : Feb/ 16/ 2016
     1. Fix problems of export mesh
     2. Fix relatives of material's channel connections
+
+ver 0.2.9 : Feb/ 19/ 2016
+    1. Refine config options
+    2. Fix default options
