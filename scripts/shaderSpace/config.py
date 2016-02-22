@@ -3,8 +3,8 @@ import maya.cmds
 kMayaVersion= maya.cmds.about( v = True )
 kCurrentOS  = maya.cmds.about( os = True )
 
-kVersion = '0.2.9'
-kLastUpdate = 'Feb, 19, 2016'
+kVersion = '0.3.0'
+kLastUpdate = 'Feb, 23, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 

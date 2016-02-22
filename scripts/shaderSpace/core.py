@@ -72,7 +72,13 @@ def buildPlace2dTexture(mainname, mirrorU, mirrorV):
     mc.setAttr( p2d + '.mirrorV', mirrorV )
     return p2d
 
+def isExistsNodeType(typ):
+    return ( typ in mc.ls( nodeTypes = True ) )
+
 def createShader(nlist, stype, cnames, checks, options, filters, rules):
+    if not isExistsNodeType( stype ):
+        mc.error( 'Unknown type : {0}'.format( stype ) )
+        return
     try:
         autoPathRule= rules['APR']
         shaderRule  = rules['SNR']

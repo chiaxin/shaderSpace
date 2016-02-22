@@ -397,7 +397,6 @@ class ActionsBlock( base.BaseBlock ):
 
     def content(self):
         self.Col = mc.columnLayout( self.Col )
-        mc.text( l = 'Shader library' )
         mc.scrollLayout( h = 120, cr = True)
         for sd in kShaderButtons.keys():
             mc.button( l = kShaderButtons[sd], 

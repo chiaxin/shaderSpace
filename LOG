@@ -24,3 +24,7 @@ ver 0.2.8 : Feb/ 16/ 2016
 ver 0.2.9 : Feb/ 19/ 2016
     1. Refine config options
     2. Fix default options
+
+ver 0.3.0 : Feb/ 23/ 2016
+    1. Add function that can be checkout material's type before creation
+    2. Main icon changed
