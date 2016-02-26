@@ -2,7 +2,8 @@ import sys
 from os.path import exists
 import string
 import maya.cmds as mc
-from config import kRelatives, kDegammaValue, kConnectSG
+from config import kShadersList, kRelatives, kDegammaValue, kConnectSG
+from config import kBumpChannel, kShaderPlugins
 from config import kMayaVersion, kCurrentOS
 
 def isVaildName(name):
@@ -165,15 +166,18 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules):
 
         # Here is deal with bump texture
         if idx == 1:
-            if stype in ['blinn', 'mia_material_x_passes', 'aiStandard']:
+            #if stype in ['blinn', 'mia_material_x_passes', 'aiStandard']:
+            if kBumpChannel[ stype ] == 'bump2d':
                 bump2d = mc.shadingNode( 'bump2d', \
                 name = substituteVariables( bump2dRule, nlist ), asUtility = True )
                 mc.connectAttr( filenode + '.' + aAttr, bump2d + '.bumpValue', f = True )
                 mc.connectAttr( bump2d + '.outNormal', sname + '.' + bAttr, f = True )
                 mc.setAttr( bump2d + '.bumpDepth', bump_value )
-            elif stype in ['VRayMtl']:
+            #elif stype in ['VRayMtl']:
+            elif kBumpChannel[ stype ] == 'file':
                 mc.connectAttr( filenode + '.' + aAttr, sname + '.' + bAttr, f = True )
-                mc.setAttr( sname + '.bumpMult', bump_value )
+                if stype == 'VRayMtl':
+                    mc.setAttr( sname + '.bumpMult', bump_value )
         else:
             mc.connectAttr( filenode + '.' + aAttr, sname + '.' + bAttr )
         newTextureList.append( filenode )
@@ -206,3 +210,56 @@ def setColorSpace(filenode, version):
         pass
     else:
         pass
+
+def reconnectShader(source, material):
+    current_type = mc.nodeType( source )
+    need_plugin = kShaderPlugins[material]
+    if current_type not in kShadersList or material not in kShadersList:
+        raise ValueError('Failed because shader is invaild')
+    if mc.nodeType(source) == material:
+        raise ValueError('Failed because they are same type')
+    if not mc.pluginInfo( need_plugin, q = True, loaded = True ) and need_plugin != 'none':
+        raise ValueError('Please load plug-in : {0}'.format( kShaderPlugins[material] ))
+
+    # Build new shader and shading Group
+    shader = source + '_rebuild'
+    shadingGroup = source + '_rebuild_SG'
+    shader = mc.shadingNode( material, name = shader, asShader = True )
+    shadingGroup = mc.sets( renderable = True, noSurfaceShader = True, empty = True, \
+    name = shadingGroup )
+
+    connectsg_pair = kConnectSG[ material ]
+    for pair in connectsg_pair:
+        mc.connectAttr(  shader + '.' + pair[0], shadingGroup + '.' + pair[1], f = True )
+
+    source_connections = kRelatives[ current_type ]
+    target_connections = kRelatives[ material ]
+    for idx, attribute in enumerate(target_connections):
+        if idx == 1:
+            if kBumpChannel[ material ] == 'bump2d':
+                bump2d = mc.listConnections( source + '.' + source_connections[idx][1], s = True, d = False, type = 'bump2d' )
+                if bump2d:
+                    mc.connectAttr( bump2d[0] + '.outNormal', shader + '.' + attribute[1], f = True )
+                else:
+                    connected_files = mc.listConnections( source + '.' + source_connections[idx][1], s = True, d = True, type = 'file' )
+                    if connected_files:
+                        rebuild_bump2d = mc.shadingNode( 'bump2d', name = source + '_rebuild_bump2d', asUtility = True )
+                        mc.connectAttr( connected_files[0] + '.' + attribute[0], rebuild_bump2d + '.bumpValue', f = True )
+                        mc.connectAttr( rebuild_bump2d + '.outNormal', shader + '.' + attribute[1] )
+            elif kBumpChannel[ material ] == 'file':
+                connections = mc.listConnections( source + '.' + source_connections[idx][1], s = True, d = False )
+                if mc.nodeType( connections[0] ) == 'bump2d':
+                    connected = mc.listConnections( connections[0] + '.bumpValue', s = True, d = False )
+                    if connected:
+                        mc.connectAttr( connected[0] + '.' + attribute[0], shader + '.' + attribute[1], f = True )
+                elif mc.nodeType( connections[0] ) == 'file':
+                    mc.connectAttr( connections[0] + '.' + attrubute[0], shader + '.' + attribute[1], f = True )
+        else:
+            connections = mc.listConnections( source + '.' + source_connections[idx][1], s = True, d = False )
+            if not connections:
+                continue
+            if mc.attributeQuery( attribute[0], node = connections[0], exists = True ):
+                mc.connectAttr( connections[0] + '.' + attribute[0], shader + '.' + attribute[1], f = True )
+            else:
+                mc.warning( '{0} not has attribue : {1}, ignore.'.format( connections[0], attribute[0] ) )
+    return shader, shadingGroup

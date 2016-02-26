@@ -1,9 +1,9 @@
 from functools import partial
 from config import optionsDefaultMaps, optionsVariableMaps
-from config import kAboutContent, kShaderPlugins, kShaderButtons
+from config import kShadersList, kAboutContent, kShaderPlugins, kShaderButtons
 from config import kChannelNames, kVersion, kWebsite
-from config import kChannelsPanelAnn, kOptionsPanelAnn
-from core import isVaildName, substituteVariables, createShader
+from config import kChannelsPanelAnn, kAssignAnn, kGammaCorrectAnn, kAutoFileAnn, kMirrorAnn
+from core import isVaildName, substituteVariables, createShader, reconnectShader
 import re
 import string
 import base
@@ -98,7 +98,7 @@ class MainMenu:
         mc.menuItem( l = 'Clean',   c = lambda *args : optionVarsCleanUp()  )
 
         mc.menu( l = 'Edit' )
-        mc.menuItem( l = 'Node Name Change', sm = True, to = True )
+        mc.menuItem( l = 'Node Name', sm = True, to = True )
         mc.menuItem( l = 'Shader',          c = lambda *args : openRuleSetting( 'SNR', 'Shader') )
         mc.menuItem( l = 'Shading Group',   c = lambda *args : openRuleSetting( 'SGN', 'Shading Group' ) )
         mc.menuItem( l = 'Texture',         c = lambda *args : openRuleSetting( 'TEX', 'Texture Node' ) )
@@ -121,6 +121,10 @@ class MainMenu:
         mc.menuItem( l = 'Create PSD', \
         c = partial( openTools, 'createPsd', 'Create Photoshop File' ) )
 
+        mc.menu( l = 'Rebuild' )
+        for shader in kShadersList:
+            mc.menuItem( l = 'To ' + shader, c = partial( self.reconnect, shader) )
+
         mc.menu( l = 'Help' )
         mc.menuItem( l ='Help',  c = lambda *args : openHelp() )
         mc.menuItem( l ='About', c = lambda *args : openAbout() )
@@ -133,6 +137,18 @@ class MainMenu:
 
     def toggleAIL(self):
         gParameters['AIL'] = int( mc.menuItem(self.Ail, q = True, cb = True ) )
+
+    def reconnect(self, *args):
+        selections = [ s for s in mc.ls( sl = True ) if mc.nodeType(s) in kShadersList ]
+        if not selections:
+            mc.warning('Please select one or more shaders')
+            return
+        all_shaders = []
+        for selected in selections:
+            shader, shadingGroup = reconnectShader( selected, args[0] )
+            print '{0} rebuild : {1} ( {2} )'.format( selected, ( shader + ', ' + shadingGroup ), args[0] )
+            all_shaders.append( shader )
+        mc.select( all_shaders, r = True )
 
 class NamingBlock( base.BaseBlock ):
     Frl = 'shaderSpaceNamingFRL'
@@ -216,16 +232,16 @@ class OptionsBlock( base.BaseBlock ):
         checks = optionsDefaultMaps['OPT']
 
     def content(self):
-        self.Col = mc.columnLayout( self.Col, ann = kOptionsPanelAnn )
+        self.Col = mc.columnLayout( self.Col )
         mc.rowLayout( nc = 4 )
         self.kCheckBoxs[0] = mc.checkBox(self.kCheckBoxs[0], l = 'Assign', \
-        v = self.checks[0], cc = partial(self.toggle, 0) )
+        v = self.checks[0], cc = partial(self.toggle, 0), ann = kAssignAnn )
         self.kCheckBoxs[1] = mc.checkBox(self.kCheckBoxs[1], l = 'Gamma Correct', \
-        v = self.checks[1], cc = partial(self.toggle, 1) )
+        v = self.checks[1], cc = partial(self.toggle, 1), ann = kGammaCorrectAnn )
         self.kCheckBoxs[2] = mc.checkBox(self.kCheckBoxs[2], l = 'Auto File', \
-        v = self.checks[2], cc = partial(self.toggle, 2) )
+        v = self.checks[2], cc = partial(self.toggle, 2), ann = kAutoFileAnn )
         self.kCheckBoxs[3] = mc.checkBox(self.kCheckBoxs[3], l = 'Mirror', \
-        v = self.checks[3], cc = partial(self.toggle, 3) )
+        v = self.checks[3], cc = partial(self.toggle, 3), ann = kMirrorAnn )
         mc.setParent('..')
 
         mc.setParent('..')
@@ -391,12 +407,24 @@ class ChannelsBlock( base.BaseBlock ):
 class ActionsBlock( base.BaseBlock ):
     Frl = 'shaderSpaceActionsFRL'
     Col = 'shaderSpaceActionsCOL'
+    Tab = 'shaderSpaceActionsTAB'
     width = 300
     height= 160
     label = 'Shader Library'
 
     def content(self):
         self.Col = mc.columnLayout( self.Col )
+        self.Tab = mc.tabLayout( self.Tab, imw = 2, imh = 3, h = 150, scr = True, cr = True )
+        createSubTab = mc.columnLayout( 'createSubTab' )
+        for sd in kShaderButtons.keys():
+            mc.button( l = kShaderButtons[sd], \
+            en = mc.pluginInfo( kShaderPlugins[sd], q = True, l = True ) \
+            or kShaderPlugins[sd] == 'none', c = partial( self.doIt, sd ) )
+        mc.setParent('..')
+
+        presetsSubTab = mc.columnLayout( 'presetSubTab' )
+        mc.setParent('..')
+        '''
         mc.scrollLayout( h = 120, cr = True)
         for sd in kShaderButtons.keys():
             mc.button( l = kShaderButtons[sd], 
@@ -404,6 +432,8 @@ class ActionsBlock( base.BaseBlock ):
             or kShaderPlugins[sd] == 'none', c = partial( self.doIt, sd ) )
         mc.setParent('..')
         mc.setParent('..')
+        '''
+        mc.tabLayout( self.Tab, e = True, tl = ( (createSubTab, 'Create'), ( presetsSubTab, 'Presets') ) )
 
     def doIt(self, *args):
         stype = args[0] # material type
@@ -587,7 +617,6 @@ class ToolsBlcok( base.BaseBlock ):
     pathFieldTFB = 'shaderSpaceToolsPathTFB'
     width = 400
     height= 180
-    root = mc.workspace( q = True, rd = True )
 
     def browse(self):
         user_input = mc.textFieldButtonGrp( self.pathFieldTFB, q = True , tx = True )
@@ -607,9 +636,10 @@ class ToolsMenu:
 
 class ExportShaderBlock( ToolsBlcok ):
     modeRBG = 'shaderSpaceExportShaderModeRBG'
+    exportShaderPath = mc.workspace( q = True, rd = True )
     def content(self):
-        self.pathFieldTFB = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Path', tx = self.root, \
-        bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
+        self.pathFieldTFB = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Path', \
+        tx = self.exportShaderPath, bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
 
         self.modeRBG = mc.radioButtonGrp( self.modeRBG, nrb = 2, l = 'Mode', \
         labelArray2 = [ 'All', 'Selected' ], sl = 1, cw3 = ( 60, 60, 60 ) )
@@ -625,15 +655,17 @@ class ExportShaderBlock( ToolsBlcok ):
         elif mode_idx == 2:
             mode = 'selected'
         tools.exportShaders( output_path, mode )
+        self.exportShaderPath = output_path
 
 class ExportMeshBlock( ToolsBlcok ):
     includeTF = 'shaderSpaceExportMeshIncldeTF'
     excludeTF = 'shaderSpaceExportMeshExcludeTF'
     grpRBG    = 'shaderSpaceExportMeshMethodRBG'
     typeRBG   = 'shaderSpaceExportMeshFileTypeRBG'
+    exportMeshPath = mc.workspace( q = True, rd = True )
     def content(self):
-        self.pathFieldTFB = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Path', tx = self.root, \
-        bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
+        self.pathFieldTFB = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Path', \
+        tx = self.exportMeshPath, bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
 
         self.grpRBG = mc.radioButtonGrp( self.grpRBG, nrb = 2, l = 'From', \
         labelArray2 = ['displayLayers', 'sets'], sl = 1, cw3 = ( 60, 90, 60 ) )
@@ -664,15 +696,17 @@ class ExportMeshBlock( ToolsBlcok ):
         include = mc.textFieldGrp( self.includeTF, q = True, tx = True )
         grp = mc.radioButtonGrp( self.grpRBG, q = True, sl = True )
         tools.exportPolygons( output_path, output_type, exclude, include, grp )
+        self.exportMeshPath = output_path
 
 class UVSnapshotBlock( ToolsBlcok ):
     resRBG = 'shaderSpaceUVsnapshotResRBG'
     extRBG = 'shaderSpaceUVsnapshotExtRBG'
     clrRBG = 'shaderSpaceUVsnapshotColRBG'
     grpRBG = 'shaderSpaceUVsnapshotFromRBG'
+    uvsnapshotPath = mc.workspace( q = True, rd = True )
     def content(self):
-        self.pathFieldTFB = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Folder', tx = self.root, \
-        bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
+        self.pathFieldTFB = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Folder', \
+        tx = self.uvsnapshotPath, bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
 
         self.grpRBG = mc.radioButtonGrp( self.grpRBG, nrb = 2, l = 'From', \
         labelArray2 = ['displayLayers', 'sets'], sl = 1, cw3 = ( 60, 120, 90 ) )
@@ -711,14 +745,16 @@ class UVSnapshotBlock( ToolsBlcok ):
         elif clr == 3: wireframe_color = [ 255, 0, 0 ]
 
         tools.uvSnapshot( output_path, resolution, extension, wireframe_color, grp )
+        self.uvsnapshotPath = output_path
 
 class CreatePsdBlock( ToolsBlcok ):
     uvPathTF    = 'shaderSpaceCreatePsdUVPathTF'
     psNameTF    = 'shaderSpaceCreatePsdNameTF'
     resRBG      = 'shaderSpaceCreatePsdResRBG'
+    createPsdPath = mc.workspace( q = True, rd = True )
     def content(self):
-        self.pathFieldTFB   = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Folder', tx = self.root, \
-        bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
+        self.pathFieldTFB   = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Folder', \
+        tx = self.createPsdPath, bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
 
         self.psdfilename = mc.textFieldGrp( self.psNameTF,  l = 'PSD Name', tx = '', cw2 = ( 80, 160 ) )
 
@@ -741,6 +777,7 @@ class CreatePsdBlock( ToolsBlcok ):
         elif res_index == 2 : resolution = 2048
         elif res_index == 3 : resolution = 4096
         tools.createPhotoshopFile( output_name, uvsnapshot_path, channels, resolution )
+        self.createPsdPath = output_path
 
 def openTools(tool, title, *args):
     win = ToolsUI()

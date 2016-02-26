@@ -3,12 +3,16 @@ import maya.cmds
 kMayaVersion= maya.cmds.about( v = True )
 kCurrentOS  = maya.cmds.about( os = True )
 
-kVersion = '0.3.0'
-kLastUpdate = 'Feb, 23, 2016'
+kVersion = '0.3.1'
+kLastUpdate = 'Feb, 27, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
 kDegammaValue = 0.454
+
+# List shaders supported
+kShadersList = ( \
+'blinn', 'mia_material_x_passes', 'aiStandard', 'VRayMtl' )
 
 # The channel's name in tuple
 kChannelNames = ( \
@@ -24,10 +28,10 @@ kShaderPlugins = { \
 
 # This dictionary describe label text on the buttons
 kShaderButtons = { \
-'blinn' : 'Blinn shader', \
-'mia_material_x_passes' : 'Material_x shader', \
-'aiStandard' : 'AiStandard shader', \
-'VRayMtl' : 'VRayMtl shader' }
+'blinn' : 'Blinn ( Maya )', \
+'mia_material_x_passes' : 'Material_x ( Mental Ray )', \
+'aiStandard' : 'AiStandard ( Arnold )', \
+'VRayMtl' : 'VRayMtl ( V Ray )' }
 
 # This dictionary describe how to connect shading
 kConnectSG = { \
@@ -42,6 +46,13 @@ kConnectSG = { \
 'aiStandard' : ( ('outColor', 'surfaceShader'), ), \
 ### VRayMtl
 'VRayMtl' : ( ('outColor', 'surfaceShader'), ) \
+}
+
+kBumpChannel = { \
+'blinn' : 'bump2d', \
+'mia_material_x_passes' : 'bump2d', \
+'aiStandard' : 'bump2d', \
+'VRayMtl' : 'file'
 }
 
 # This dictionary describe how to connect channels
@@ -83,12 +94,12 @@ kRelatives = { \
 'VRayMtl' : ( \
 ('outColor', 'color'),\
 ('outColor', 'bumpMap'),\
-('outAlpha', 'reflectionColorAmount'),\
-('outAlpha', 'reflectionGlossiness'),\
 ('outAlpha', 'roughnessAmount'),\
-('outAlpha', 'refractionColorAmount'),\
-('outColor', 'reflectionColor'),\
+('outAlpha', 'reflectionGlossiness'),\
+('outAlpha', 'reflectionColorAmount'),\
+('outAlpha', 'reflectionColor'),\
 ('outColor', 'reflectionExitColor'),\
+('outAlpha', 'refractionColorAmount'),\
 ('outColor', 'illumColor') )\
 }
 
@@ -134,16 +145,15 @@ optionsVariableMaps = { \
 'IGN' : 'shaderSpaceIgnoreTexWhenNotExistsIntOptVar', \
 'AIL' : 'shaderSpaceAlphaIsLuminaIntOptVar' }
 
-kChannelsPanelAnn = '''Rmb can be change short name,
-Ctrl + Rmb can be change texture filter,
-Alt + Rmb can be change bump value
+kChannelsPanelAnn = '''RMB can be change short name
+Ctrl + RMB can be change texture filter
+Alt + RMB can be change bump value
 '''
 
-kOptionsPanelAnn = '''Assign ON can be assign shader when created,
-Gamma Correct ON can do gamma correct,
-Auto File ON can be set path automatically ( Rmb can be set rule ),
-Mirror ON can be set place2dTexture mirror U, V or both ( Rmb can be change )
-'''
+kAssignAnn = 'Assign ON would be assign shader when created'
+kGammaCorrectAnn = 'Gamma Correct ON would be make gamma correct'
+kAutoFileAnn = 'Auto File ON would be set texture path automatically ( RMB can be set the rule )'
+kMirrorAnn = 'Mirror ON would be set place2dTexture mirror U, V or both ( RMB can be switch )'
 
 kAboutContent = '''About Shader Space
 

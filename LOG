@@ -28,3 +28,7 @@ ver 0.2.9 : Feb/ 19/ 2016
 ver 0.3.0 : Feb/ 23/ 2016
     1. Add function that can be checkout material's type before creation
     2. Main icon changed
+
+ver 0.3.1 : Feb/ 27/ 2016
+    1. The method additional that can be rebuild shader connections to difference shader.
+    2. Add presets UI
