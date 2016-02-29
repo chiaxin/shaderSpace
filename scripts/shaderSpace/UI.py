@@ -9,23 +9,33 @@ import string
 import base
 import tools
 import maya.cmds as mc
+from pymel.core import optionVar
 import pymel.core as pm
 
 # -----------------------------------------------
 # : Read all option variablies
 # -----------------------------------------------
 for key in optionsVariableMaps.keys():
-    if optionsVariableMaps[key] not in pm.env.optionVars:
-        pm.optionVar[ optionsVariableMaps[key] ] = optionsDefaultMaps[key]
+    if not mc.optionVar( exists = optionsVariableMaps[key] ):
+        optionVar[ optionsVariableMaps[key] ] = optionsDefaultMaps[key]
+gNameRuleMaps = {}
+for key in ('APR', 'SNR', 'SGN', 'TEX', 'B2D', 'P2D', 'MIF'):
+    try: 
+        gNameRuleMaps[ key ] = mc.optionVar( q = optionsVariableMaps[ key ] ).encode( 'ascii', 'ignore' )
+    except KeyError: 
+        gNameRuleMaps[ key ] = optionsDefaultMaps[ key ].encode( 'ascii', 'ignore' )
+    except:
+        raise
+'''
 try:
     gNameRuleMaps = { \
-    'APR' : mc.optionVar( q = optionsVariableMaps['APR'] ), \
-    'SNR' : mc.optionVar( q = optionsVariableMaps['SNR'] ), \
-    'SGN' : mc.optionVar( q = optionsVariableMaps['SGN'] ), \
-    'TEX' : mc.optionVar( q = optionsVariableMaps['TEX'] ), \
-    'B2D' : mc.optionVar( q = optionsVariableMaps['B2D'] ), \
-    'P2D' : mc.optionVar( q = optionsVariableMaps['P2D'] ), \
-    'MIF' : mc.optionVar( q = optionsVariableMaps['MIF'] ), \
+    'APR' : mc.optionVar( q = optionsVariableMaps['APR'] ).encode( 'ascii', 'ignore' ), \
+    'SNR' : mc.optionVar( q = optionsVariableMaps['SNR'] ).encode( 'ascii', 'ignore' ), \
+    'SGN' : mc.optionVar( q = optionsVariableMaps['SGN'] ).encode( 'ascii', 'ignore' ), \
+    'TEX' : mc.optionVar( q = optionsVariableMaps['TEX'] ).encode( 'ascii', 'ignore' ), \
+    'B2D' : mc.optionVar( q = optionsVariableMaps['B2D'] ).encode( 'ascii', 'ignore' ), \
+    'P2D' : mc.optionVar( q = optionsVariableMaps['P2D'] ).encode( 'ascii', 'ignore' ), \
+    'MIF' : mc.optionVar( q = optionsVariableMaps['MIF'] ).encode( 'ascii', 'ignore' ), \
     'none': '' }
 except:
     gNameRuleMaps = { \
@@ -37,18 +47,39 @@ except:
     'P2D' : optionsDefaultMaps['P2D'] , \
     'MIF' : optionsDefaultMaps['MIF'] , \
     'none': '' }
+'''
+gParameters = {}
+try: 
+    gParameters['BMP'] = mc.optionVar( q = optionsVariableMaps['BMP'] )
+except: 
+    gParameters['BMP'] = optionsDefaultMaps['BMP']
+
+gParameters['MIR'] = 0
+
+try: 
+    gParameters['IGN'] = int( optionsVariableMaps['IGN'] )
+except: 
+    gParameters['IGN'] = int( optionsDefaultMaps['IGN'] )
+
+try: 
+    gParameters['AIL'] = int( optionsVariableMaps['AIL'] )
+except: 
+    gParameters['AIL'] = int( optionsDefaultMaps['AIL'] )
+'''
 try:
     gParameters = { \
     'BMP' : mc.optionVar( q = optionsVariableMaps['BMP'] ), \
     'MIR' : 0, \
-    'IGN' : bool( optionsVariableMaps['IGN'] ), \
-    'AIL' : bool( optionsVariableMaps['AIL'] ) }
+    'IGN' : int( optionsVariableMaps['IGN'] ), \
+    'AIL' : int( optionsVariableMaps['AIL'] ) }
 except:
     gParameters = { \
     'BMP' : optionsDefaultMaps['BMP'], \
     'MIR' : 0, \
-    'IGN' : bool( optionsDefaultMaps['IGN'] ), \
-    'AIL' : bool( optionsDefaultMaps['AIL'] ) }
+    'IGN' : int( optionsDefaultMaps['IGN'] ), \
+    'AIL' : int( optionsDefaultMaps['AIL'] ) }
+'''
+
 # -----------------------------------------------
 # : Read option variablies end
 # -----------------------------------------------
@@ -90,7 +121,7 @@ class MainMenu:
 
         mc.menu( l = 'File' )
         mc.menuItem( l = 'Save',    c = lambda *args : optionVarsUpdate()   )
-        mc.menuItem( l = 'Reset',   c = lambda *args : settingReset()       )
+        mc.menuItem( l = 'Reset',   c = lambda *args : optionVarsReset()    )
         mc.menuItem( d = True )
         mc.menuItem( l = 'Export',  c = lambda *args : exportSetting()      )
         mc.menuItem( l = 'Load',    c = lambda *args : loadSetting()        )
@@ -99,35 +130,39 @@ class MainMenu:
 
         mc.menu( l = 'Edit' )
         mc.menuItem( l = 'Node Name', sm = True, to = True )
-        mc.menuItem( l = 'Shader',          c = lambda *args : openRuleSetting( 'SNR', 'Shader') )
-        mc.menuItem( l = 'Shading Group',   c = lambda *args : openRuleSetting( 'SGN', 'Shading Group' ) )
-        mc.menuItem( l = 'Texture',         c = lambda *args : openRuleSetting( 'TEX', 'Texture Node' ) )
-        mc.menuItem( l = 'Bump2d',          c = lambda *args : openRuleSetting( 'B2D', 'Bump2d' ) )
-        mc.menuItem( l = 'Place2dTexture',  c = lambda *args : openRuleSetting( 'P2D', 'Place2dTexture' ) )
-        mc.menuItem( l = 'materialInfo',    c = lambda *args : openRuleSetting( 'MIF', 'Material Info' ) )
+        mc.menuItem( l = 'Shader',          c = lambda *args : ruleSettingUI( 'SNR', 'Shader') )
+        mc.menuItem( l = 'Shading Group',   c = lambda *args : ruleSettingUI( 'SGN', 'Shading Group' ) )
+        mc.menuItem( l = 'Texture',         c = lambda *args : ruleSettingUI( 'TEX', 'Texture Node' ) )
+        mc.menuItem( l = 'Bump2d',          c = lambda *args : ruleSettingUI( 'B2D', 'Bump2d' ) )
+        mc.menuItem( l = 'Place2dTexture',  c = lambda *args : ruleSettingUI( 'P2D', 'Place2dTexture' ) )
+        mc.menuItem( l = 'materialInfo',    c = lambda *args : ruleSettingUI( 'MIF', 'Material Info' ) )
         mc.setParent( '..', menu = True )
-        self.Ign = mc.menuItem( self.Ign, l = 'Ignore Texture if not found', \
+        self.Ign = mc.menuItem( self.Ign, l = 'Ignore auto path if not found', \
         cb = bool( gParameters['IGN'] ), c = lambda * args : self.toggleIGN() )
-        self.Ail = mc.menuItem( self.Ail, l = 'Alpha Is Luminance in outAlpha', \
+        self.Ail = mc.menuItem( self.Ail, l = 'Alpha Is Luminance if outAlpha', \
         cb = bool( gParameters['AIL'] ), c = lambda *args : self.toggleAIL() )
 
         mc.menu( l = 'Tools' )
         mc.menuItem( l = 'UV Snap Shot', \
-        c = partial( openTools, 'uvsnapshot', 'Batch UV Snapshot' ) )
+        c = partial( ssTools, 'uvsnapshot', 'Batch UV Snapshot' ) )
         mc.menuItem( l = 'Export Meshes', \
-        c = partial( openTools, 'exportMesh', 'Batch Export Meshes' ) )
+        c = partial( ssTools, 'exportMesh', 'Batch Export Meshes' ) )
         mc.menuItem( l = 'Export Shaders', \
-        c = partial( openTools, 'exportShader', 'Export Shaders' ) )
+        c = partial( ssTools, 'exportShader', 'Export Shaders' ) )
         mc.menuItem( l = 'Create PSD', \
-        c = partial( openTools, 'createPsd', 'Create Photoshop File' ) )
+        c = partial( ssTools, 'createPsd', 'Create Photoshop File' ) )
 
         mc.menu( l = 'Rebuild' )
         for shader in kShadersList:
-            mc.menuItem( l = 'To ' + shader, c = partial( self.reconnect, shader) )
+            if mc.pluginInfo( kShaderPlugins[ shader ], q = True, loaded = True ) or \
+            kShaderPlugins[ shader ] == 'none':
+                mc.menuItem( l = 'To ' + shader, c = partial( self.reconnect, shader) )
+            else:
+                mc.menuItem( l = 'To ' + shader, en = False )
 
         mc.menu( l = 'Help' )
-        mc.menuItem( l ='Help',  c = lambda *args : openHelp() )
-        mc.menuItem( l ='About', c = lambda *args : openAbout() )
+        mc.menuItem( l ='Help',  c = lambda *args : ssHelp() )
+        mc.menuItem( l ='About', c = lambda *args : ssAbout() )
 
         mc.setParent('..')
         mc.setParent('..')
@@ -171,9 +206,9 @@ class NamingBlock( base.BaseBlock ):
         optionsDefaultMaps['SDN'] , \
         optionsDefaultMaps['USR'] , \
         optionsDefaultMaps['VER']  ]
-        for key in ['AST', 'SDN' 'USR', 'VER']:
-            pm.optionVar( remove = optionsVariableMaps[key] )
-            pm.optionVar[ optionsVariableMaps[key] ] = optionsDefaultMaps[key]
+        for key in ('AST', 'SDN' 'USR', 'VER'):
+            mc.optionVar( remove = optionsVariableMaps[key] )
+            optionVar[ optionsVariableMaps[key] ] = optionsDefaultMaps.get(key, 'undefined')
 
     def content(self):
         self.Col = mc.columnLayout( self.Col )
@@ -229,7 +264,7 @@ class OptionsBlock( base.BaseBlock ):
 
     if type(checks) not in [list, tuple] or len(checks) != 4:
         mc.warning('shaderSpace optionVar capture failed of Options')
-        checks = optionsDefaultMaps['OPT']
+        checks = optionsDefaultMaps.get('OPT', (0, 0, 0, 0))
 
     def content(self):
         self.Col = mc.columnLayout( self.Col )
@@ -285,48 +320,48 @@ class ChannelsBlock( base.BaseBlock ):
     'ssRlcMU', 'ssSpcMU', 'ssTrsMU', 'ssIncMU' ]
 
     fMenus = [ \
-    ['ssColOffMI', 'ssColMipMI', 'ssColBoxMI' \
+    [ 'ssColOffMI', 'ssColMipMI', 'ssColBoxMI' \
     ,'ssColQudMI', 'ssColQurMI', 'ssColGusMI' ], \
-    ['ssBmpOffMI', 'ssBmpMipMI', 'ssBmpBoxMI' \
+    [ 'ssBmpOffMI', 'ssBmpMipMI', 'ssBmpBoxMI' \
     ,'ssBmpQudMI', 'ssBmpQurMI', 'ssBmpGusMI' ], \
-    ['ssRouOffMI', 'ssRouMipMI', 'ssRouBoxMI' \
+    [ 'ssRouOffMI', 'ssRouMipMI', 'ssRouBoxMI' \
     ,'ssRouQudMI', 'ssRouQurMI', 'ssRouGusMI' ], \
-    ['ssGlsOffMI', 'ssGlsMipMI', 'ssGlsBoxMI' \
+    [ 'ssGlsOffMI', 'ssGlsMipMI', 'ssGlsBoxMI' \
     ,'ssGlsQudMI', 'ssGlsQurMI', 'ssGlsGusMI' ], \
-    ['ssRelOffMI', 'ssRelMipMI', 'ssRelBoxMI' \
+    [ 'ssRelOffMI', 'ssRelMipMI', 'ssRelBoxMI' \
     ,'ssRelQudMI', 'ssRelQurMI', 'ssRelGusMI' ], \
-    ['ssRlcOffMI', 'ssRlcMipMI', 'ssRlcBoxMI' \
+    [ 'ssRlcOffMI', 'ssRlcMipMI', 'ssRlcBoxMI' \
     ,'ssRlcQudMI', 'ssRlcQurMI', 'ssRlcGusMI' ], \
-    ['ssSpcOffMI', 'ssSpcMipMI', 'ssSpcBoxMI' \
+    [ 'ssSpcOffMI', 'ssSpcMipMI', 'ssSpcBoxMI' \
     ,'ssSpcQudMI', 'ssSpcQurMI', 'ssSpcGusMI' ], \
-    ['ssTrsOffMI', 'ssTrsMipMI', 'ssTrsBoxMI' \
+    [ 'ssTrsOffMI', 'ssTrsMipMI', 'ssTrsBoxMI' \
     ,'ssTrsQudMI', 'ssTrsQurMI', 'ssTrsGusMI' ], \
-    ['ssIncOffMI', 'ssIncMipMI', 'ssIncBoxMI' \
+    [ 'ssIncOffMI', 'ssIncMipMI', 'ssIncBoxMI' \
     ,'ssIncQudMI', 'ssIncQurMI', 'ssIncGusMI' ] ]
 
     kFILTERS = ( 'off', 'mipmap', 'box', 'quadratic', 'quartic', 'guassian' )
     kBUMP_VALUES = ( 0.01, 0.02, 0.025, 0.05, 0.1, 0.5, 1 )
 
-    checks = list( pm.optionVar[ optionsVariableMaps[ 'CCK' ] ] )
+    checks = list( optionVar[ optionsVariableMaps[ 'CCK' ] ] )
     if type(checks) not in [ list, tuple ] or len(checks) != 9:
         mc.warning('shaderSpace optionVar capture failed in Channels')
         checks = optionsDefaultMaps['CCK']
-        pm.optionVar( remove = optionsVariableMaps['CCK'] )
-        pm.optionVar[ optionsVariableMaps['CCK'] ] = optionsDefaultMaps['CCK']
+        optionVar( remove = optionsVariableMaps['CCK'] )
+        optionVar[ optionsVariableMaps['CCK'] ] = optionsDefaultMaps['CCK']
 
-    shorts = list( pm.optionVar[ optionsVariableMaps[ 'CST' ] ] )
+    shorts = list( optionVar[ optionsVariableMaps[ 'CST' ] ] )
     if type(shorts) not in [ list, tuple ] or len(shorts) != 9:
         mc.warning('shaderSpace optionVar capture failed in Shorts')
         shorts = optionsDefaultMaps['CST']
-        pm.optionVar( remove = optionsVariableMaps['CST'] )
-        pm.optionVar[ optionsVariableMaps['CST'] ] = optionsDefaultMaps['CST']
+        optionVar( remove = optionsVariableMaps['CST'] )
+        optionVar[ optionsVariableMaps['CST'] ] = optionsDefaultMaps['CST']
 
-    filters = list( pm.optionVar[ optionsVariableMaps[ 'CFR' ] ] )
+    filters = list( optionVar[ optionsVariableMaps[ 'CFR' ] ] )
     if type(filters) not in [ list, tuple ] or len(filters) != 9:
         mc.warning('shaderSpace optionVar capture failed in Filters')
         filters = optionsDefaultMaps['CFR']
-        pm.optionVar( remove = optionsVariableMaps['CFR'] )
-        pm.optionVar[ optionsVariableMaps['CFR'] ] = optionsDefaultMaps['CFR']
+        optionVar( remove = optionsVariableMaps['CFR'] )
+        optionVar[ optionsVariableMaps['CFR'] ] = optionsDefaultMaps['CFR']
 
     def content(self):
         self.Col = mc.columnLayout( self.Col, ann = kChannelsPanelAnn )
@@ -381,7 +416,7 @@ class ChannelsBlock( base.BaseBlock ):
     def toggle(self, *args):
         value = int( mc.checkBox( self.checkBoxs[args[0]], q = True, v = True ) )
         self.checks[args[0]] = value
-        print '{0} channel has been changed : {1}'.format( kChannelNames[args[0]], bool(value) )
+        print 'The {0} channel has been switched : {1}'.format( kChannelNames[args[0]], bool(value) )
 
     def popShortChange(self, *args):
         ans = mc.promptDialog( t = 'Channel name', m = 'Enter short:', \
@@ -393,16 +428,16 @@ class ChannelsBlock( base.BaseBlock ):
         else:
             self.shorts[ args[0] ] = short
             mc.menuItem( self.sMenus[args[0]], e = True, l = short )
-            print 'The channel short name has been changed : {0}'.format(short)
+            print 'The channel\'s short name has been changed : {0}'.format(short)
 
     def filterSwitch(self, *args):
         self.filters[ args[0] ] = args[1]
-        print '{0} channel filter has been changed : {1}'.\
+        print 'The {0} channel\'s filter has been changed : {1}'.\
         format( kChannelNames[args[0]], self.kFILTERS[args[1]] )
 
     def bumpValueSwitch(self, *args):
         gParameters['BMP'] = self.kBUMP_VALUES[ args[0] ]
-        print 'bump value has been changed : {0}'.format( self.kBUMP_VALUES[args[0]] )
+        print 'Bump value has been changed : {0}'.format( self.kBUMP_VALUES[args[0]] )
 
 class ActionsBlock( base.BaseBlock ):
     Frl = 'shaderSpaceActionsFRL'
@@ -424,15 +459,6 @@ class ActionsBlock( base.BaseBlock ):
 
         presetsSubTab = mc.columnLayout( 'presetSubTab' )
         mc.setParent('..')
-        '''
-        mc.scrollLayout( h = 120, cr = True)
-        for sd in kShaderButtons.keys():
-            mc.button( l = kShaderButtons[sd], 
-            en = mc.pluginInfo( kShaderPlugins[sd], q = True, l = True ) \
-            or kShaderPlugins[sd] == 'none', c = partial( self.doIt, sd ) )
-        mc.setParent('..')
-        mc.setParent('..')
-        '''
         mc.tabLayout( self.Tab, e = True, tl = ( (createSubTab, 'Create'), ( presetsSubTab, 'Presets') ) )
 
     def doIt(self, *args):
@@ -519,7 +545,7 @@ class SubRuleBlock( base.BaseBlock ):
             mc.warning('Failed to save path')
             return
         gNameRuleMaps[self.ruletype] = message
-        pm.optionVar[ optionsVariableMaps[self.ruletype] ] = gNameRuleMaps[self.ruletype]
+        optionVar[ optionsVariableMaps[self.ruletype] ] = gNameRuleMaps[self.ruletype]
         print 'The rule has been stored : ' + message
         self.close()
 
@@ -593,7 +619,7 @@ class SubWinUIT( base.BaseUIT ):
         mc.frameLayout( dt = self.Uit, lv = False, cl = False, cll = False, mh = 5, mw = 5 )
         mc.columnLayout( dt = self.Uit, adj = True , rs = 5, cal = 'center' )
 
-def openRuleSetting(ruletype, title):
+def ruleSettingUI(ruletype, title):
     ruleWin = SubRuleUI()
     blocks = [ SubRuleBlock(ruletype), IntroBlock() ]
     menu = SubRuleMenu(ruletype)
@@ -642,9 +668,12 @@ class ExportShaderBlock( ToolsBlcok ):
         tx = self.exportShaderPath, bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
 
         self.modeRBG = mc.radioButtonGrp( self.modeRBG, nrb = 2, l = 'Mode', \
-        labelArray2 = [ 'All', 'Selected' ], sl = 1, cw3 = ( 60, 60, 60 ) )
+        labelArray2 = ('All', 'Selected'), sl = 1, cw3 = ( 60, 60, 60 ) )
 
+        mc.rowLayout( nc = 2, cw2=(180, 180), adjustableColumn = 1, columnAttach = (( 1, 'both', 2 ), ( 2, 'both', 2 )) )
         mc.button( l = 'Export Shaders', c = lambda *args : self.doIt() )
+        mc.button( l = 'Cancel', c = lambda *args : mc.deleteUI( ToolsUI.Win ) )
+        mc.setParent('..')
 
     def doIt(self):
         output_path = ( mc.textFieldButtonGrp( self.pathFieldTFB, q = True, tx = True ) ).replace( '\\', '/' )
@@ -655,7 +684,7 @@ class ExportShaderBlock( ToolsBlcok ):
         elif mode_idx == 2:
             mode = 'selected'
         tools.exportShaders( output_path, mode )
-        self.exportShaderPath = output_path
+        ExportShaderBlock.exportShaderPath = output_path
 
 class ExportMeshBlock( ToolsBlcok ):
     includeTF = 'shaderSpaceExportMeshIncldeTF'
@@ -668,16 +697,19 @@ class ExportMeshBlock( ToolsBlcok ):
         tx = self.exportMeshPath, bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
 
         self.grpRBG = mc.radioButtonGrp( self.grpRBG, nrb = 2, l = 'From', \
-        labelArray2 = ['displayLayers', 'sets'], sl = 1, cw3 = ( 60, 90, 60 ) )
+        labelArray2 = ('displayLayers', 'sets'), sl = 1, cw3 = ( 60, 90, 60 ) )
 
         self.typeRBG = mc.radioButtonGrp( self.typeRBG, nrb = 3,l = 'File Type', \
-        labelArray3 = ['obj', 'ma', 'mb'], sl = 1, cw4 = ( 60, 45, 45, 45 ) )
+        labelArray3 = ('obj', 'ma', 'mb'), sl = 1, cw4 = ( 60, 45, 45, 45 ) )
 
         mc.rowLayout( nc = 2 )
         includeTF = mc.textFieldGrp( self.includeTF, l = 'Include:', cw2 = ( 60, 80 ) )
         excludeTF = mc.textFieldGrp( self.excludeTF, l = 'Exclude:', cw2 = ( 60, 80 ) )
         mc.setParent('..')
+        mc.rowLayout( nc = 2, cw2=(180, 180), adjustableColumn = 1, columnAttach = (( 1, 'both', 2 ), ( 2, 'both', 2 )) )
         mc.button( l = 'Export Mesh', c = lambda *args : self.doIt() )
+        mc.button( l = 'Cancel', c = lambda *args : mc.deleteUI( ToolsUI.Win ) )
+        mc.setParent('..')
 
     def doIt(self):
         output_path =  ( mc.textFieldButtonGrp( self.pathFieldTFB, q = True, tx = True ) ).replace( '\\', '/' )
@@ -696,7 +728,7 @@ class ExportMeshBlock( ToolsBlcok ):
         include = mc.textFieldGrp( self.includeTF, q = True, tx = True )
         grp = mc.radioButtonGrp( self.grpRBG, q = True, sl = True )
         tools.exportPolygons( output_path, output_type, exclude, include, grp )
-        self.exportMeshPath = output_path
+        ExportMeshBlock.exportMeshPath = output_path
 
 class UVSnapshotBlock( ToolsBlcok ):
     resRBG = 'shaderSpaceUVsnapshotResRBG'
@@ -709,24 +741,27 @@ class UVSnapshotBlock( ToolsBlcok ):
         tx = self.uvsnapshotPath, bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
 
         self.grpRBG = mc.radioButtonGrp( self.grpRBG, nrb = 2, l = 'From', \
-        labelArray2 = ['displayLayers', 'sets'], sl = 1, cw3 = ( 60, 120, 90 ) )
+        labelArray2 = ('displayLayers', 'sets'), sl = 1, cw3 = ( 60, 120, 90 ) )
 
         self.res_TF = mc.radioButtonGrp( self.resRBG, nrb = 3, l = 'Resolution', \
-        labelArray3 = ['1024', '2048', '4096'], sl = 3, cw4 = ( 60, 80, 80, 80 ) )
+        labelArray3 = ('1024', '2048', '4096'), sl = 3, cw4 = ( 60, 80, 80, 80 ) )
 
         self.ext_TF = mc.radioButtonGrp( self.extRBG, nrb = 3, l = 'Extension', \
-        labelArray3 = ['png', 'tif', 'tga'], sl = 1, cw4 = ( 60, 80, 80, 80 ) )
+        labelArray3 = ('png', 'tif', 'tga'), sl = 1, cw4 = ( 60, 80, 80, 80 ) )
 
         self.clr = mc.radioButtonGrp( self.clrRBG , nrb = 3, l = 'Color', \
-        labelArray3 = ['White', 'Black', 'Red'], sl = 1, cw4 = ( 60, 80, 80, 80 ) )
+        labelArray3 = ('White', 'Black', 'Red'), sl = 1, cw4 = ( 60, 80, 80, 80 ) )
 
+        mc.rowLayout( nc = 2, cw2=(180, 180), adjustableColumn = 1, columnAttach = (( 1, 'both', 2 ), ( 2, 'both', 2 )) )
         mc.button( l = 'UV SnapShot', c = lambda *args : self.doIt() )
+        mc.button( l = 'Cancel', c = lambda *args : mc.deleteUI( ToolsUI.Win ) )
+        mc.setParent('..')
 
     def doIt(self):
         output_path = ( mc.textFieldButtonGrp( self.pathFieldTFB, q = True, tx = True ) ).replace( '\\', '/' )
         resolution = 4096
         extension = 'png'
-        wireframe_color = [ 1.0, 1.0, 1.0 ]
+        wireframe_color = ( 1.0, 1.0, 1.0 )
         res = mc.radioButtonGrp( self.resRBG, q = True, sl = True )
         ext = mc.radioButtonGrp( self.extRBG, q = True, sl = True )
         clr = mc.radioButtonGrp( self.clrRBG, q = True, sl = True )
@@ -740,12 +775,12 @@ class UVSnapshotBlock( ToolsBlcok ):
         elif ext == 2: extension = 'tif'
         elif ext == 3: extension = 'tga'
 
-        if clr ==   1: wireframe_color = [ 255, 255, 255 ]
-        elif clr == 2: wireframe_color = [ 0, 0, 0 ]
-        elif clr == 3: wireframe_color = [ 255, 0, 0 ]
+        if clr ==   1: wireframe_color = ( 255, 255, 255 )
+        elif clr == 2: wireframe_color = ( 0, 0, 0 )
+        elif clr == 3: wireframe_color = ( 255, 0, 0 )
 
         tools.uvSnapshot( output_path, resolution, extension, wireframe_color, grp )
-        self.uvsnapshotPath = output_path
+        UVSnapshotBlock.uvsnapshotPath = output_path
 
 class CreatePsdBlock( ToolsBlcok ):
     uvPathTF    = 'shaderSpaceCreatePsdUVPathTF'
@@ -758,11 +793,14 @@ class CreatePsdBlock( ToolsBlcok ):
 
         self.psdfilename = mc.textFieldGrp( self.psNameTF,  l = 'PSD Name', tx = '', cw2 = ( 80, 160 ) )
 
-        self.uvPathTF    = mc.textFieldGrp( self.uvPathTF,  l = 'UV Image', tx = self.root, cw2 = ( 80, 280 ) )
+        self.uvPathTF = mc.textFieldGrp( self.uvPathTF,  l = 'UV Image', tx = self.createPsdPath, cw2 = ( 80, 280 ) )
 
         self.resRBG = mc.radioButtonGrp( self.resRBG, nrb = 3,l = 'Resolution', \
-        labelArray3 = ['1024', '2048', '4096'], sl = 3, cw4 = ( 80, 80, 80, 80 ) )
+        labelArray3 = ('1024', '2048', '4096'), sl = 3, cw4 = ( 80, 80, 80, 80 ) )
+        mc.rowLayout( nc = 2, cw2=(180, 180), adjustableColumn = 1, columnAttach = (( 1, 'both', 2 ), ( 2, 'both', 2 )) )
         mc.button( l = 'Create PSD', c = lambda *args : self.doIt() )
+        mc.button( l = 'Cancel', c = lambda *args : mc.deleteUI( ToolsUI.Win ) )
+        mc.setParent('..')
 
     def doIt(self):
         output_path = ( mc.textFieldGrp( self.pathFieldTFB, q = True, tx = True ) ).replace( '\\', '/' )
@@ -777,9 +815,9 @@ class CreatePsdBlock( ToolsBlcok ):
         elif res_index == 2 : resolution = 2048
         elif res_index == 3 : resolution = 4096
         tools.createPhotoshopFile( output_name, uvsnapshot_path, channels, resolution )
-        self.createPsdPath = output_path
+        CreatePsdBlock.createPsdPath = output_path
 
-def openTools(tool, title, *args):
+def ssTools(tool, title, *args):
     win = ToolsUI()
     if tool == 'uvsnapshot':
         block = UVSnapshotBlock()
@@ -817,7 +855,7 @@ class AboutBlock( base.BaseBlock ):
         mc.scrollField( ed = False, ww = True, w = 300, h = 240, text = kAboutContent )
         mc.setParent('..')
         mc.rowLayout( nc = 2 )
-        mc.button( l = 'Website', w = 100, h = 30, c = lambda *args : mc.launch( web = kWebsite ) )
+        mc.button( l = 'Github', w = 100, h = 30, c = lambda *args : mc.launch( web = kWebsite ) )
         mc.button( l = 'OK', w = 100, h = 30, c = lambda *args : self.close() )
         mc.setParent('..')
 
@@ -825,13 +863,13 @@ class AboutBlock( base.BaseBlock ):
         if mc.window( AboutUI.Win, q = True, exists = True ):
             mc.deleteUI( AboutUI.Win )
 
-def openAbout(*args):
+def ssAbout(*args):
     aboutWin = AboutUI()
     blocks = [ AboutBlock() ]
     aboutWin.build( None, blocks, SubWinUIT(), 'Shader Space')
     aboutWin.show()
 
-def openHelp(*args):
+def ssHelp(*args):
     pass
 
 # -----------------------------------------------
@@ -861,7 +899,7 @@ def exportSetting():
         f.write( 'set MaterialInfo='    + gNameRuleMaps['MIF'] + '\n')
     except:
         raise
-    print('Shader space option has been saved. : {0}'.format( config_files[0] ) )
+    print('Shader space option has been saved : {0}'.format( config_files[0] ) )
     f.close()
 
 def loadSetting():
@@ -930,8 +968,6 @@ def loadSetting():
                 if parser.group(1)   == 'let':      analysisLet( parser.group(2), parser.group(3) )
                 elif parser.group(1) == 'filter':   analysisFilter( parser.group(2), parser.group(3) )
                 elif parser.group(1) == 'set':      analysisSet( parser.group(2), parser.group(3) )
-            else:
-                pass
     except:
         raise
     print('Shader space option has been loaded. : {0}'.format( config_files[0] ) )
@@ -943,74 +979,78 @@ def loadSetting():
 # -----------------------------------------------
 # : Option variable functions
 # -----------------------------------------------
-def settingReset():
+def optionVarsReset():
     ans = mc.confirmDialog( t = 'Restore Options', m = 'Restore All Options?', 
-    button=['Yes','No'], db = 'Yes', cb = 'No', ds = 'No' )
+    button=( 'Yes','No' ), db = 'Yes', cb = 'No', ds = 'No' )
     if ans == 'No': return
-    mc.textField( NamingBlock.kTextFields[0], e = True, tx = optionsDefaultMaps['AST'] )
-    NamingBlock.contents[0] = optionsDefaultMaps['AST']
-    mc.textField( NamingBlock.kTextFields[1], e = True, tx = optionsDefaultMaps['SDN'] )
-    NamingBlock.contents[1] = optionsDefaultMaps['SDN']
-    mc.textField( NamingBlock.kTextFields[2], e = True, tx = optionsDefaultMaps['USR'] )
-    NamingBlock.contents[2] = optionsDefaultMaps['USR']
-    mc.textField( NamingBlock.kTextFields[3], e = True, tx = optionsDefaultMaps['VER'] )
-    NamingBlock.contents[3] = optionsDefaultMaps['VER']
-    for idx, check in enumerate(optionsDefaultMaps['OPT']):
+    NamingBlock.contents[0] = optionsDefaultMaps.get('AST', 'undefined').encode( 'ascii', 'ignore' )
+    mc.textField( NamingBlock.kTextFields[0], e = True, tx = NamingBlock.contents[0] )
+
+    NamingBlock.contents[1] = optionsDefaultMaps.get('SDN', 'undefined').encode( 'ascii', 'ignore' )
+    mc.textField( NamingBlock.kTextFields[1], e = True, tx = NamingBlock.contents[1] )
+
+    NamingBlock.contents[2] = optionsDefaultMaps.get('USR', 'undefined').encode( 'ascii', 'ignore' )
+    mc.textField( NamingBlock.kTextFields[2], e = True, tx = NamingBlock.contents[2] )
+
+    NamingBlock.contents[3] = optionsDefaultMaps.get('VER', 'undefined').encode( 'ascii', 'ignore' )
+    mc.textField( NamingBlock.kTextFields[3], e = True, tx = NamingBlock.contents[3] )
+
+    for idx, check in enumerate( optionsDefaultMaps['OPT']):
         mc.checkBox( OptionsBlock.kCheckBoxs[idx], e = True, v = check )
-        OptionsBlock.checks[idx] = check
+        OptionsBlock.checks[idx] = int(check)
     for idx, short in enumerate(optionsDefaultMaps['CST']):
         mc.menuItem( ChannelsBlock.sMenus[idx], e = True, l = short )
-        ChannelsBlock.shorts[idx] = short
+        ChannelsBlock.shorts[idx] = short.encode( 'ascii', 'ignore' )
     for idx, check in enumerate(optionsDefaultMaps['CCK']):
         mc.checkBox( ChannelsBlock.checkBoxs[idx], e = True, v = check )
-        ChannelsBlock.checks[idx] = check
+        ChannelsBlock.checks[idx] = int(check)
     for idx, value in enumerate(optionsDefaultMaps['CFR']):
         mc.menuItem( ChannelsBlock.fMenus[idx][value], e = True, rb = True )
-        ChannelsBlock.filters[idx] = value
-    mc.menuItem( MainMenu.Ign, e = True, cb = optionsDefaultMaps['IGN'] )
-    mc.menuItem( MainMenu.Ail, e = True, cb = optionsDefaultMaps['AIL'] )
+        ChannelsBlock.filters[idx] = int(value)
+    mc.menuItem( MainMenu.Ign, e = True, cb = optionsDefaultMaps.get('IGN', True) )
+    mc.menuItem( MainMenu.Ail, e = True, cb = optionsDefaultMaps.get('AIL', True) )
 
 def optionVarsUpdate():
     optionVarsCleanUp()
-    pm.optionVar[ optionsVariableMaps['AST'] ] = NamingBlock.contents[0]
-    pm.optionVar[ optionsVariableMaps['SDN'] ] = NamingBlock.contents[1]
-    pm.optionVar[ optionsVariableMaps['USR'] ] = NamingBlock.contents[2]
-    pm.optionVar[ optionsVariableMaps['VER'] ] = NamingBlock.contents[3]
-    pm.optionVar[ optionsVariableMaps['OPT'] ] = OptionsBlock.checks
-    pm.optionVar[ optionsVariableMaps['APR'] ] = gNameRuleMaps['APR']
-    pm.optionVar[ optionsVariableMaps['CST'] ] = ChannelsBlock.shorts
-    pm.optionVar[ optionsVariableMaps['CCK'] ] = ChannelsBlock.checks
-    pm.optionVar[ optionsVariableMaps['CFR'] ] = ChannelsBlock.filters
-    pm.optionVar[ optionsVariableMaps['BMP'] ] = gParameters['BMP']
-    pm.optionVar[ optionsVariableMaps['SNR'] ] = gNameRuleMaps['SNR']
-    pm.optionVar[ optionsVariableMaps['SGN'] ] = gNameRuleMaps['SGN']
-    pm.optionVar[ optionsVariableMaps['TEX'] ] = gNameRuleMaps['TEX']
-    pm.optionVar[ optionsVariableMaps['B2D'] ] = gNameRuleMaps['B2D']
-    pm.optionVar[ optionsVariableMaps['P2D'] ] = gNameRuleMaps['P2D']
-    pm.optionVar[ optionsVariableMaps['MIF'] ] = gNameRuleMaps['MIF']
-    pm.optionVar[ optionsVariableMaps['IGN'] ] = gParameters['IGN']
-    pm.optionVar[ optionsVariableMaps['AIL'] ] = gParameters['AIL']
+    optionVar[ optionsVariableMaps['AST'] ] = NamingBlock.contents[0].encode( 'ascii', 'ignore' )
+    optionVar[ optionsVariableMaps['SDN'] ] = NamingBlock.contents[1].encode( 'ascii', 'ignore' )
+    optionVar[ optionsVariableMaps['USR'] ] = NamingBlock.contents[2].encode( 'ascii', 'ignore' )
+    optionVar[ optionsVariableMaps['VER'] ] = NamingBlock.contents[3].encode( 'ascii', 'ignore' )
+    optionVar[ optionsVariableMaps['OPT'] ] = tuple( [ int(e) for e in OptionsBlock.checks ] )
+    optionVar[ optionsVariableMaps['APR'] ] = gNameRuleMaps['APR'].encode( 'ascii', 'ignore' )
+    optionVar[ optionsVariableMaps['CST'] ] = tuple( [ e.encode( 'ascii', 'ignore' ) for e in ChannelsBlock.shorts ] )
+    optionVar[ optionsVariableMaps['CCK'] ] = tuple( [ int(e) for e in ChannelsBlock.checks ] )
+    optionVar[ optionsVariableMaps['CFR'] ] = tuple( [ int(e) for e in ChannelsBlock.filters ] )
+    optionVar[ optionsVariableMaps['BMP'] ] = gParameters['BMP']
+    optionVar[ optionsVariableMaps['SNR'] ] = gNameRuleMaps['SNR'].encode( 'ascii', 'ignore' )
+    optionVar[ optionsVariableMaps['SGN'] ] = gNameRuleMaps['SGN'].encode( 'ascii', 'ignore' )
+    optionVar[ optionsVariableMaps['TEX'] ] = gNameRuleMaps['TEX'].encode( 'ascii', 'ignore' )
+    optionVar[ optionsVariableMaps['B2D'] ] = gNameRuleMaps['B2D'].encode( 'ascii', 'ignore' )
+    optionVar[ optionsVariableMaps['P2D'] ] = gNameRuleMaps['P2D'].encode( 'ascii', 'ignore' )
+    optionVar[ optionsVariableMaps['MIF'] ] = gNameRuleMaps['MIF'].encode( 'ascii', 'ignore' )
+    optionVar[ optionsVariableMaps['IGN'] ] = int(gParameters['IGN'])
+    optionVar[ optionsVariableMaps['AIL'] ] = int(gParameters['AIL'])
 
 # For debug
 def _printAllOptionVar():
-    print pm.optionVar[ optionsVariableMaps['AST'] ]
-    print pm.optionVar[ optionsVariableMaps['SDN'] ]
-    print pm.optionVar[ optionsVariableMaps['USR'] ]
-    print pm.optionVar[ optionsVariableMaps['VER'] ]
-    print pm.optionVar[ optionsVariableMaps['OPT'] ]
-    print pm.optionVar[ optionsVariableMaps['APR'] ]
-    print pm.optionVar[ optionsVariableMaps['CST'] ]
-    print pm.optionVar[ optionsVariableMaps['CCK'] ]
-    print pm.optionVar[ optionsVariableMaps['CFR'] ]
-    print pm.optionVar[ optionsVariableMaps['BMP'] ]
-    print pm.optionVar[ optionsVariableMaps['SNR'] ]
-    print pm.optionVar[ optionsVariableMaps['SGN'] ]
-    print pm.optionVar[ optionsVariableMaps['TEX'] ]
-    print pm.optionVar[ optionsVariableMaps['B2D'] ]
-    print pm.optionVar[ optionsVariableMaps['P2D'] ]
-    print pm.optionVar[ optionsVariableMaps['MIF'] ]
-    print pm.optionVar[ optionsVariableMaps['IGN'] ]
-    print pm.optionVar[ optionsVariableMaps['AIL'] ]
+    print optionVar[ optionsVariableMaps['AST'] ]
+    print optionVar[ optionsVariableMaps['SDN'] ]
+    print optionVar[ optionsVariableMaps['USR'] ]
+    print optionVar[ optionsVariableMaps['VER'] ]
+    print optionVar[ optionsVariableMaps['OPT'] ]
+    print optionVar[ optionsVariableMaps['APR'] ]
+    print optionVar[ optionsVariableMaps['CST'] ]
+    print optionVar[ optionsVariableMaps['CCK'] ]
+    print optionVar[ optionsVariableMaps['CFR'] ]
+    print optionVar[ optionsVariableMaps['BMP'] ]
+    print optionVar[ optionsVariableMaps['SNR'] ]
+    print optionVar[ optionsVariableMaps['SGN'] ]
+    print optionVar[ optionsVariableMaps['TEX'] ]
+    print optionVar[ optionsVariableMaps['B2D'] ]
+    print optionVar[ optionsVariableMaps['P2D'] ]
+    print optionVar[ optionsVariableMaps['MIF'] ]
+    print optionVar[ optionsVariableMaps['IGN'] ]
+    print optionVar[ optionsVariableMaps['AIL'] ]
 
 def _printAllOptions():
     print NamingBlock.contents[0]

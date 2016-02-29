@@ -3,8 +3,8 @@ import maya.cmds
 kMayaVersion= maya.cmds.about( v = True )
 kCurrentOS  = maya.cmds.about( os = True )
 
-kVersion = '0.3.1'
-kLastUpdate = 'Feb, 27, 2016'
+kVersion = '0.3.2'
+kLastUpdate = 'Mar, 01, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
@@ -109,11 +109,11 @@ optionsDefaultMaps = { \
 'SDN' : 'shader', \
 'USR' : 'user', \
 'VER' : 'v01', \
-'OPT' : [ 1, 1, 1, 0 ], \
+'OPT' : ( 1, 1, 1, 0 ), \
 'APR' : '<root>/sourceimages/<asset>/<asset><shader>_<channel>_<version>.tga', \
-'CST' : ['col', 'bmp', 'rhs', 'gls', 'rfl', 'rlc', 'spc', 'trs', 'inc'], \
-'CCK' : [ 1, 1, 1, 0, 0, 0, 0, 0, 0 ], \
-'CFR' : [ 0, 0, 0, 0 ,0 ,0 ,0 ,0 ,0 ], \
+'CST' : ( 'col', 'bmp', 'rhs', 'gls', 'rfl', 'rlc', 'spc', 'trs', 'inc' ), \
+'CCK' : ( 1, 1, 1, 0, 0, 0, 0, 0, 0 ), \
+'CFR' : ( 0, 0, 0, 0 ,0 ,0 ,0 ,0 ,0 ), \
 'BMP' : 0.1, \
 'SNR' : '<asset>_<shader>_SD', \
 'SGN' : '<asset>_<shader>_SG', \

@@ -32,3 +32,6 @@ ver 0.3.0 : Feb/ 23/ 2016
 ver 0.3.1 : Feb/ 27/ 2016
     1. The method additional that can be rebuild shader connections to difference shader.
     2. Add presets UI
+
+ver 0.3.2 : Mar/ 01/ 2016
+    1. Add process window in the tools, and fix same UI problems.

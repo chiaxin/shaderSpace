@@ -16,7 +16,7 @@ def exportShaders(export_path, mode):
 
     if mode == 'all':
         shading_groups = [ s for s in mc.ls(type='shadingEngine') \
-        if s not in ['initialParticleSE', 'initialShadingGroup'] ]
+        if s not in ('initialParticleSE', 'initialShadingGroup') ]
     elif mode == 'selected':
         selections = mc.ls( sl = True )
         if not selections:
@@ -27,28 +27,38 @@ def exportShaders(export_path, mode):
             if not connected_sg:
                 continue
             shading_groups.extend( [ s for s in connected_sg \
-            if s not in ['initialParticleSE', 'initialShadingGroup'] ] )
+            if s not in ('initialParticleSE', 'initialShadingGroup') ] )
         shading_groups = list( set(shading_groups) )
     else: return
     if not shading_groups:
         mc.warning('There are no any shaders can be export!')
         return
     ans = mc.confirmDialog( t = 'Export Shaders', m = '\n'.join( shading_groups ), \
-    button=['Yes','No'], db = 'Yes', cb = 'No', ds = 'No' )
+    button=('Yes','No'), db = 'Yes', cb = 'No', ds = 'No' )
     if ans == 'No': return
 
     connections = []
     fullpath = ''
+
+    amout = 0
+    process_max = len( shading_groups )
+    mc.progressWindow( title = 'Export Shaders', progress = amout, \
+    status = 'Export start...', isInterruptable = True, max = process_max )
     for sg in shading_groups:
+        if mc.progressWindow( q = True, isCancelled = True ):
+            break
+
         fullpath = '{0}/{1}.ma'.format( export_path, sg )
         connections = mc.listHistory( sg, allFuture=True, pruneDagObjects=True )
         mc.select( connections, replace = True, noExpand = True )
         try:
             mc.file( fullpath, force = True, exportSelected = True, type = 'mayaAscii', options = 'v=0;' )
+            amout += 1
+            mc.progressWindow( e = True, progress = amout, status = 'Export : {0} / {1}'.format(amout,  process_max) )
         except:
             raise
         mc.select( cl = True )
-        print('Export : {0} > {1}'.format( sg, fullpath ) )
+    mc.progressWindow( endProgress = True )
 
 def exportPolygons(export_path, export_type, exclude, include, group):
     if not export_path:
@@ -101,6 +111,11 @@ def exportPolygons(export_path, export_type, exclude, include, group):
 
     store_selections = mc.ls( sl = True )
 
+    amout = 0
+    process_max = len( pairs_mesh )
+    mc.progressWindow( title = 'Export Shaders', progress = amout, \
+    status = 'Export start...', isInterruptable = True, max = process_max )
+
     for key in pairs_mesh.keys():
         mc.select( cl = True )
 
@@ -117,9 +132,13 @@ def exportPolygons(export_path, export_type, exclude, include, group):
         try:
             mc.file( fullpath, f = True, exportSelected = True,
             type = export_info['typ'], options = export_info['opt'] )
+            amout += 1
+            mc.progressWindow( e = True, progress = amout, status = 'Export : {0} / {1}'.format(amout,  process_max) )
         except:
             raise
         print( 'The meshes have been exported : ' + fullpath )
+
+    mc.progressWindow( endProgress = True )
 
     if objExportPlugin is not True:
         unloaded_plugins = mc.unloadPlugin('objExport')
@@ -129,6 +148,8 @@ def exportPolygons(export_path, export_type, exclude, include, group):
             mc.warning('Failed to unload plug-in : objExport')
     if store_selections:
         mc.select( store_selections, r = True )
+    else:
+        mc.select( cl = True )
 
 def uvSnapshot(export_path, res, ext, color, group):
     if not export_path:
@@ -156,6 +177,11 @@ def uvSnapshot(export_path, res, ext, color, group):
 
     store_selections = mc.ls( sl = True )
 
+    amout = 0
+    process_max = len( pairs_mesh )
+    mc.progressWindow( title = 'UV Snapshot', progress = amout, \
+    status = 'Snapshot start...', isInterruptable = True, max = process_max )
+
     for key in pairs_mesh.keys():
         mc.select( cl = True )
         fullpath = '{0}/{1}.{2}'.format( export_path, key , ext )
@@ -164,11 +190,18 @@ def uvSnapshot(export_path, res, ext, color, group):
             mc.uvSnapshot( overwrite = True, \
             redColor = color[0], greenColor = color[1], blueColor = color[2], \
             xResolution = res, yResolution = res, fileFormat = ext, name = fullpath )
+            amout += 1
+            mc.progressWindow( e = True, progress = amout, status = 'Snapshot : {0} / {1}'.format(amout,  process_max) )
         except:
             raise
         print('UV Snapshot > ' + fullpath)
+
+    mc.progressWindow( endProgress = True )
+
     if store_selections:
         mc.select( store_selections, r = True )
+    else:
+        mc.select( cl = True )
 
 def createPhotoshopFile(export_path, uv_path, channels, res):
     if not export_path:
