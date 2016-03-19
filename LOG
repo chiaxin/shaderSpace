@@ -35,3 +35,9 @@ ver 0.3.1 : Feb/ 27/ 2016
 
 ver 0.3.2 : Mar/ 01/ 2016
     1. Add process window in the tools, and fix same UI problems.
+
+ver 0.3.3 : Mar/ 06/ 2016
+    1. Fix arnold shader config
+
+ver 0.3.4 : Mar/ 20/ 2016
+    1. Change gamma correct rule.

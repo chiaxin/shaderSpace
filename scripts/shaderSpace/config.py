@@ -2,9 +2,10 @@ import maya.cmds
 
 kMayaVersion= maya.cmds.about( v = True )
 kCurrentOS  = maya.cmds.about( os = True )
+kLinearProfile = 'scene-linear Rec 709/sRGB'
 
-kVersion = '0.3.2'
-kLastUpdate = 'Mar, 01, 2016'
+kVersion = '0.3.4'
+kLastUpdate = 'Mar, 19, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
@@ -13,6 +14,10 @@ kDegammaValue = 0.454
 # List shaders supported
 kShadersList = ( \
 'blinn', 'mia_material_x_passes', 'aiStandard', 'VRayMtl' )
+
+kColorManagementShaders = ( \
+'blinn', 'mia_material_x_passes'
+)
 
 # The channel's name in tuple
 kChannelNames = ( \
@@ -83,12 +88,12 @@ kRelatives = { \
 'aiStandard' : ( \
 ('outColor', 'color'),\
 ('outAlpha', 'normalCamera'),\
-('outAlpha', 'Kr'),\
-('outAlpha', 'Ks'),\
+('outAlpha', 'diffuseRoughness'),\
 ('outAlpha', 'specularRoughness'),\
-('outAlpha', 'Kt'),\
+('outAlpha', 'Ks'),\
+('outAlpha', 'KsColor'),\
 ('outColor', 'KrColor'),\
-('outColor', 'KsColor'),\
+('outColor', 'Kt'),\
 ('outColor', 'emissionColor') ),\
 ### VRayMtl
 'VRayMtl' : ( \

@@ -5,6 +5,7 @@ import maya.cmds as mc
 from config import kShadersList, kRelatives, kDegammaValue, kConnectSG
 from config import kBumpChannel, kShaderPlugins
 from config import kMayaVersion, kCurrentOS
+from config import kColorManagementShaders, kLinearProfile
 
 def isVaildName(name):
     if not name:
@@ -142,9 +143,11 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules):
         bAttr = pairs[1]
 
         # If gamma correct is on, and this texture is scalar
-        if gamma_correct_on and aAttr == 'outAlpha':
-            if stype in [ 'blinn', 'mia_material_x_passes' ]:
-                setColorSpace( filenode, kMayaVersion )
+        # if gamma_correct_on and aAttr == 'outAlpha':
+        print 'mc.attributeQuery( {0}, type = {1}, usedAsColor = True )'.format(stype, bAttr)
+        if stype in kColorManagementShaders and \
+        not mc.attributeQuery( bAttr, type = stype, usedAsColor = True ):
+            setColorSpaceToLinear( filenode, kMayaVersion )
 
         # If auto file path is on
         if autopath_on:
@@ -201,11 +204,14 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules):
             print selections
     return sname, sengine
 
-def setColorSpace(filenode, version):
-    if version in [ '2013', '2014' ]:
+def setColorSpaceToLinear(filenode, version):
+    if version in [ '2014' ]:
         mc.setAttr( filenode + '.colorProfile', 2 )
     elif version in [ '2015' ]:
-        mc.setAttr( filenode + '.colorSpace', 'Raw', typ = 'string' )
+        if kLinearProfile in mc.colorManagementCatalog( ltc = True, type = 'input' ):
+            mc.setAttr( filenode + '.colorSpace', kLinearProfile, typ = 'string' )
+        else:
+            mc.warning( 'The {0} is not in color transforms'.format( kLinearProfile ) )
     elif version in [ '2016' ]:
         pass
     else:
