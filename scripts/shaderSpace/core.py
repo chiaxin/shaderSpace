@@ -167,8 +167,8 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules):
         # Set file's filter
         mc.setAttr( filenode + '.filterType', filters[idx] )
 
-        # Here is deal with bump texture
-        if idx == 1:
+        # Here is deal with bump texture, index(9)
+        if idx == 9:
             #if stype in ['blinn', 'mia_material_x_passes', 'aiStandard']:
             if kBumpChannel[ stype ] == 'bump2d':
                 bump2d = mc.shadingNode( 'bump2d', \
@@ -241,7 +241,7 @@ def reconnectShader(source, material):
     source_connections = kRelatives[ current_type ]
     target_connections = kRelatives[ material ]
     for idx, attribute in enumerate(target_connections):
-        if idx == 1:
+        if idx == 9:
             if kBumpChannel[ material ] == 'bump2d':
                 bump2d = mc.listConnections( source + '.' + source_connections[idx][1], s = True, d = False, type = 'bump2d' )
                 if bump2d:

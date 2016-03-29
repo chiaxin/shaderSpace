@@ -4,8 +4,8 @@ kMayaVersion= maya.cmds.about( v = True )
 kCurrentOS  = maya.cmds.about( os = True )
 kLinearProfile = 'scene-linear Rec 709/sRGB'
 
-kVersion = '0.3.4'
-kLastUpdate = 'Mar, 19, 2016'
+kVersion = '0.3.5'
+kLastUpdate = 'Mar, 29, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
@@ -20,9 +20,16 @@ kColorManagementShaders = ( \
 )
 
 # The channel's name in tuple
+'''
 kChannelNames = ( \
 'Color', 'Bump', 'Roughness', 'Glossiness', 'Reflectivity', \
 'ReflectionColor', 'SpecularColor', 'Transparency', 'Incandescence' )
+'''
+kChannelNames = ( \
+'Color', 'Diffuse Weight', 'Roughness', \
+'Reflectance', 'Reflection Color', 'Refl Glossiness', \
+'Transparency', 'Refraction Color', 'Refra Glossiness', \
+'Bump', 'Incandescence', 'Opacity' )
 
 # This dictionary describe what plug-in necessary for shader
 kShaderPlugins = { \
@@ -65,47 +72,59 @@ kRelatives = { \
 ### blinn
 'blinn' : ( \
 ('outColor', 'color'),\
-('outAlpha', 'normalCamera'),\
-('outAlpha', 'reflectivity'),\
-('outAlpha', 'eccentricity'),\
+('outAlpha', 'diffuse'),\
+('outAlpha', 'translucence'),\
 ('outAlpha', 'specularRollOff'),\
-('outColor', 'reflectedColor'),\
 ('outColor', 'specularColor'),\
+('outAlpha', 'eccentricity'),\
 ('outColor', 'transparency'),\
-('outColor', 'incandescence') ),
+('outColor', 'reflectedColor'),\
+('outAlpha', 'reflectivity'),\
+('outAlpha', 'normalCamera'),\
+('outColor', 'incandescence'),\
+('outAlpha', 'matteOpacity') ),\
 ### mia_material_x_passes
 'mia_material_x_passes' : ( \
 ('outColor', 'diffuse'),\
-('outAlpha', 'standard_bump'),\
+('outAlpha', 'diffuse_weight'),\
 ('outAlpha', 'diffuse_roughness'),\
-('outAlpha', 'refl_gloss'),\
 ('outAlpha', 'reflectivity'),\
 ('outColor', 'refl_color'),\
-('outColor', 'refl_falloff_color'),\
+('outAlpha', 'refl_gloss'),\
 ('outAlpha', 'transparency'),\
-('outColor', 'additional_color') ),
+('outColor', 'refr_color'),\
+('outAlpha', 'refr_gloss'),\
+('outAlpha', 'standard_bump'),\
+('outColor', 'additional_color'),\
+('outAlpha', 'cutout_opacity') ),\
 ### aiStandard
 'aiStandard' : ( \
 ('outColor', 'color'),\
-('outAlpha', 'normalCamera'),\
+('outAlpha', 'Kd'),\
 ('outAlpha', 'diffuseRoughness'),\
-('outAlpha', 'specularRoughness'),\
 ('outAlpha', 'Ks'),\
-('outAlpha', 'KsColor'),\
+('outColor', 'KsColor'),\
+('outAlpha', 'specularRoughness'),\
+('outAlpha', 'Kt'),\
 ('outColor', 'KrColor'),\
-('outColor', 'Kt'),\
-('outColor', 'emissionColor') ),\
+('outAlpha', 'refractionRoughness'),\
+('outAlpha', 'normalCamera'),\
+('outColor', 'emissionColor'),\
+('outColor', 'opacity') ),\
 ### VRayMtl
 'VRayMtl' : ( \
 ('outColor', 'color'),\
-('outColor', 'bumpMap'),\
+('outAlpha', 'diffuseColorAmount'),\
 ('outAlpha', 'roughnessAmount'),\
-('outAlpha', 'reflectionGlossiness'),\
 ('outAlpha', 'reflectionColorAmount'),\
-('outAlpha', 'reflectionColor'),\
-('outColor', 'reflectionExitColor'),\
+('outColor', 'reflectionColor'),\
+('outAlpha', 'reflectionGlossiness'),\
 ('outAlpha', 'refractionColorAmount'),\
-('outColor', 'illumColor') )\
+('outColor', 'refractionColor'),\
+('outAlpha', 'refractionGlossiness'),\
+('outColor', 'bumpMap'),\
+('outColor', 'illumColor'),\
+('outColor', 'opacityMap') )
 }
 
 # Default options
@@ -114,11 +133,11 @@ optionsDefaultMaps = { \
 'SDN' : 'shader', \
 'USR' : 'user', \
 'VER' : 'v01', \
-'OPT' : ( 1, 1, 1, 0 ), \
+'OPT' : [ 1, 1, 1, 0 ], \
 'APR' : '<root>/sourceimages/<asset>/<asset><shader>_<channel>_<version>.tga', \
-'CST' : ( 'col', 'bmp', 'rhs', 'gls', 'rfl', 'rlc', 'spc', 'trs', 'inc' ), \
-'CCK' : ( 1, 1, 1, 0, 0, 0, 0, 0, 0 ), \
-'CFR' : ( 0, 0, 0, 0 ,0 ,0 ,0 ,0 ,0 ), \
+'CST' : [ 'col', 'dif', 'rhs', 'rfl', 'rfc', 'rfg', 'trs', 'rfc', 'rfg', 'bmp', 'inc', 'opc' ], \
+'CCK' : [ 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0 ], \
+'CFR' : [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ], \
 'BMP' : 0.1, \
 'SNR' : '<asset>_<shader>_SD', \
 'SGN' : '<asset>_<shader>_SG', \

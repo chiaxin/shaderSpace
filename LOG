@@ -41,3 +41,7 @@ ver 0.3.3 : Mar/ 06/ 2016
 
 ver 0.3.4 : Mar/ 20/ 2016
     1. Change gamma correct rule.
+
+ver 0.3.5 : Mar/ 29/ 2016
+    1. Channels have been changed, increase to 12 channels.
+    2. Fix core process

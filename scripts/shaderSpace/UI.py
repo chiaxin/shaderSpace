@@ -104,7 +104,7 @@ def shaderSpace():
 class MainUI( base.BaseUI ):
     Win = 'shaderSpaceMainWIN'
     Frl = 'shaderSpaceMainFRL'
-    width = 328
+    width = 345
     height= 450
 
 class MainUIT( base.BaseUIT ):
@@ -309,55 +309,65 @@ class ChannelsBlock( base.BaseBlock ):
     Col = 'shaderSpaceChannelsCOL'
     Label = 'Channel Selections'
     width = 300
-    height= 80
+    height= 100
 
     checkBoxs = [ \
-    'ssColCB', 'ssBmpCB', 'ssRouCB', 'ssGlsCB', 'ssRelCB', \
-    'ssRlcCB', 'ssSpcCB', 'ssTrsCB', 'ssIncCB' ]
+    'ssColCB', 'ssDifCB', 'ssRouCB', \
+    'ssRelCB', 'ssRlcCB', 'ssGlsCB', \
+    'ssTrsCB', 'ssRfcCB', 'ssRfgCB', \
+    'ssBmpCB', 'ssIncCB', 'ssOpaCB' ]
 
     sMenus = [ \
-    'ssColMU', 'ssBmpMU', 'ssRouMU', 'ssGlsMU', 'ssRelMU', \
-    'ssRlcMU', 'ssSpcMU', 'ssTrsMU', 'ssIncMU' ]
+    'ssColMU', 'ssDifMU', 'ssRouMU', \
+    'ssRelMU', 'ssRlcMU', 'ssGlsMU', \
+    'ssTrsMU', 'ssRfcMU', 'ssRfgMU', \
+    'ssBmpMU', 'ssIncCB', 'ssOpaCB' ]
 
     fMenus = [ \
     [ 'ssColOffMI', 'ssColMipMI', 'ssColBoxMI' \
-    ,'ssColQudMI', 'ssColQurMI', 'ssColGusMI' ], \
-    [ 'ssBmpOffMI', 'ssBmpMipMI', 'ssBmpBoxMI' \
-    ,'ssBmpQudMI', 'ssBmpQurMI', 'ssBmpGusMI' ], \
+    , 'ssColQudMI', 'ssColQurMI', 'ssColGusMI' ], \
+    [ 'ssDifOffMI', 'ssDifMipMI', 'ssDifBoxMI' \
+    , 'ssDifQudMI', 'ssDifQurMI', 'ssDifGusMI' ], \
     [ 'ssRouOffMI', 'ssRouMipMI', 'ssRouBoxMI' \
-    ,'ssRouQudMI', 'ssRouQurMI', 'ssRouGusMI' ], \
-    [ 'ssGlsOffMI', 'ssGlsMipMI', 'ssGlsBoxMI' \
-    ,'ssGlsQudMI', 'ssGlsQurMI', 'ssGlsGusMI' ], \
+    , 'ssRouQudMI', 'ssRouQurMI', 'ssRouGusMI' ], \
     [ 'ssRelOffMI', 'ssRelMipMI', 'ssRelBoxMI' \
-    ,'ssRelQudMI', 'ssRelQurMI', 'ssRelGusMI' ], \
+    , 'ssRelQudMI', 'ssRelQurMI', 'ssRelGusMI' ], \
     [ 'ssRlcOffMI', 'ssRlcMipMI', 'ssRlcBoxMI' \
-    ,'ssRlcQudMI', 'ssRlcQurMI', 'ssRlcGusMI' ], \
-    [ 'ssSpcOffMI', 'ssSpcMipMI', 'ssSpcBoxMI' \
-    ,'ssSpcQudMI', 'ssSpcQurMI', 'ssSpcGusMI' ], \
+    , 'ssRlcQudMI', 'ssRlcQurMI', 'ssRlcGusMI' ], \
+    [ 'ssGlsOffMI', 'ssGlsMipMI', 'ssGlsBoxMI' \
+    , 'ssGlsQudMI', 'ssGlsQurMI', 'ssGlsGusMI' ], \
     [ 'ssTrsOffMI', 'ssTrsMipMI', 'ssTrsBoxMI' \
-    ,'ssTrsQudMI', 'ssTrsQurMI', 'ssTrsGusMI' ], \
+    , 'ssTrsQudMI', 'ssTrsQurMI', 'ssTrsGusMI' ], \
+    [ 'ssRfcOffMI', 'ssRfcMipMI', 'ssRfcBoxMI' \
+    , 'ssRfcQudMI', 'ssRfcQurMI', 'ssRfcGusMI' ], \
+    [ 'ssRfgOffMI', 'ssRfgMipMI', 'ssRfgBoxMI' \
+    , 'ssRfgQudMI', 'ssRfgQurMI', 'ssRfgGusMI' ], \
+    [ 'ssBmpOffMI', 'ssBmpMipMI', 'ssBmpBoxMI' \
+    , 'ssBmpQudMI', 'ssBmpQurMI', 'ssBmpGusMI' ], \
     [ 'ssIncOffMI', 'ssIncMipMI', 'ssIncBoxMI' \
-    ,'ssIncQudMI', 'ssIncQurMI', 'ssIncGusMI' ] ]
+    , 'ssIncQudMI', 'ssIncQurMI', 'ssIncGusMI' ], \
+    [ 'ssOpaOffMI', 'ssOpaMipMI', 'ssOpaBoxMI' \
+    , 'ssOpaQudMI', 'ssOpaQurMI', 'ssOpaGusMI' ] ]
 
     kFILTERS = ( 'off', 'mipmap', 'box', 'quadratic', 'quartic', 'guassian' )
     kBUMP_VALUES = ( 0.01, 0.02, 0.025, 0.05, 0.1, 0.5, 1 )
 
     checks = list( optionVar[ optionsVariableMaps[ 'CCK' ] ] )
-    if type(checks) not in [ list, tuple ] or len(checks) != 9:
+    if type(checks) not in [ list, tuple ] or len(checks) != 12:
         mc.warning('shaderSpace optionVar capture failed in Channels')
         checks = optionsDefaultMaps['CCK']
         optionVar( remove = optionsVariableMaps['CCK'] )
         optionVar[ optionsVariableMaps['CCK'] ] = optionsDefaultMaps['CCK']
 
     shorts = list( optionVar[ optionsVariableMaps[ 'CST' ] ] )
-    if type(shorts) not in [ list, tuple ] or len(shorts) != 9:
+    if type(shorts) not in [ list, tuple ] or len(shorts) != 12:
         mc.warning('shaderSpace optionVar capture failed in Shorts')
         shorts = optionsDefaultMaps['CST']
         optionVar( remove = optionsVariableMaps['CST'] )
         optionVar[ optionsVariableMaps['CST'] ] = optionsDefaultMaps['CST']
 
     filters = list( optionVar[ optionsVariableMaps[ 'CFR' ] ] )
-    if type(filters) not in [ list, tuple ] or len(filters) != 9:
+    if type(filters) not in [ list, tuple ] or len(filters) != 12:
         mc.warning('shaderSpace optionVar capture failed in Filters')
         filters = optionsDefaultMaps['CFR']
         optionVar( remove = optionsVariableMaps['CFR'] )
@@ -391,6 +401,15 @@ class ChannelsBlock( base.BaseBlock ):
         self.checkBoxs[8] = mc.checkBox( self.checkBoxs[8], l = kChannelNames[8], \
         v = self.checks[8], cc = partial( self.toggle, 8 ) )
         mc.setParent('..')
+
+        mc.rowLayout( nc = 3, cw3 = (100, 100, 100) )
+        self.checkBoxs[9] = mc.checkBox( self.checkBoxs[9], l = kChannelNames[9], \
+        v = self.checks[9], cc = partial( self.toggle, 9 ) )
+        self.checkBoxs[10] = mc.checkBox( self.checkBoxs[10], l = kChannelNames[10], \
+        v = self.checks[10], cc = partial( self.toggle, 10 ) )
+        self.checkBoxs[11] = mc.checkBox( self.checkBoxs[11], l = kChannelNames[11], \
+        v = self.checks[11], cc = partial( self.toggle, 11 ) )
+        mc.setParent('..')
         mc.setParent('..')
 
         for idx, channel in enumerate( self.checkBoxs ):
@@ -405,7 +424,7 @@ class ChannelsBlock( base.BaseBlock ):
                 l = filt, rb = ( self.filters[idx] == n ), \
                 c = partial( self.filterSwitch, idx, n ) )
 
-        mc.popupMenu( parent = self.checkBoxs[1], alt = True )
+        mc.popupMenu( parent = self.checkBoxs[9], alt = True )
         mc.menuItem( l = 'Bump Value' )
         mc.menuItem( d = True )
         mc.radioMenuItemCollection()
