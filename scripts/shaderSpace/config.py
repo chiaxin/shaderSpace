@@ -4,8 +4,8 @@ kMayaVersion= maya.cmds.about( v = True )
 kCurrentOS  = maya.cmds.about( os = True )
 kLinearProfile = 'scene-linear Rec 709/sRGB'
 
-kVersion = '0.3.5'
-kLastUpdate = 'Mar, 29, 2016'
+kVersion = '0.3.6'
+kLastUpdate = 'Apr, 13, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
@@ -18,6 +18,9 @@ kShadersList = ( \
 kColorManagementShaders = ( \
 'blinn', 'mia_material_x_passes'
 )
+
+kVrayColorMangementShaders = ( \
+'VRayMtl' )
 
 # The channel's name in tuple
 '''
@@ -135,7 +138,7 @@ optionsDefaultMaps = { \
 'VER' : 'v01', \
 'OPT' : [ 1, 1, 1, 0 ], \
 'APR' : '<root>/sourceimages/<asset>/<asset><shader>_<channel>_<version>.tga', \
-'CST' : [ 'col', 'dif', 'rhs', 'rfl', 'rfc', 'rfg', 'trs', 'rfc', 'rfg', 'bmp', 'inc', 'opc' ], \
+'CST' : [ 'col', 'dif', 'rhs', 'rfl', 'rlc', 'rlg', 'trs', 'rfc', 'rfg', 'bmp', 'inc', 'opc' ], \
 'CCK' : [ 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0 ], \
 'CFR' : [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ], \
 'BMP' : 0.1, \
@@ -174,10 +177,10 @@ Ctrl + RMB can be change texture filter
 Alt + RMB can be change bump value
 '''
 
-kAssignAnn = 'Assign ON would be assign shader when created'
-kGammaCorrectAnn = 'Gamma Correct ON would be make gamma correct'
-kAutoFileAnn = 'Auto File ON would be set texture path automatically ( RMB can be set the rule )'
-kMirrorAnn = 'Mirror ON would be set place2dTexture mirror U, V or both ( RMB can be switch )'
+kAssignAnn = 'Would be assign shader when created'
+kGammaCorrectAnn = 'Would be make gamma correct in texture'
+kAutoFileAnn = 'Would be set texture path automatically ( RMB can be set the rule )'
+kMirrorAnn = 'Would be set place2dTexture mirror U, V or both ( RMB can be switch )'
 
 kAboutContent = '''About Shader Space
 

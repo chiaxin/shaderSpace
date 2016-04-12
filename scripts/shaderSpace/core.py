@@ -2,10 +2,11 @@ import sys
 from os.path import exists
 import string
 import maya.cmds as mc
+import maya.mel as mel
 from config import kShadersList, kRelatives, kDegammaValue, kConnectSG
 from config import kBumpChannel, kShaderPlugins
 from config import kMayaVersion, kCurrentOS
-from config import kColorManagementShaders, kLinearProfile
+from config import kColorManagementShaders, kLinearProfile, kVrayColorMangementShaders
 
 def isVaildName(name):
     if not name:
@@ -142,12 +143,24 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules):
         aAttr = pairs[0]
         bAttr = pairs[1]
 
-        # If gamma correct is on, and this texture is scalar
-        # if gamma_correct_on and aAttr == 'outAlpha':
-        print 'mc.attributeQuery( {0}, type = {1}, usedAsColor = True )'.format(stype, bAttr)
-        if stype in kColorManagementShaders and \
-        not mc.attributeQuery( bAttr, type = stype, usedAsColor = True ):
+        isColorChannel = ( aAttr == 'outColor' )
+
+        # Exclude bump map in VRay, because Bump map in VRay is outColor way.
+        if stype in kVrayColorMangementShaders and bAttr == 'bumpMap':
+            isColorChannel = False
+
+        # Gamma correct setting :
+        # In maya built-in shader or MentalRay, we need to set linear profile if is not color channel.
+        # In VRay, we need to add VRay degamma attribute, and set it to sRGB if is color channel.
+        if stype in kColorManagementShaders and not isColorChannel:
             setColorSpaceToLinear( filenode, kMayaVersion )
+        elif stype in kVrayColorMangementShaders and isColorChannel:
+            try:
+                setVrayTextureDegamma( filenode )
+            except ValueError as detail:
+                mc.error( detail )
+            except:
+                raise
 
         # If auto file path is on
         if autopath_on:
@@ -216,6 +229,19 @@ def setColorSpaceToLinear(filenode, version):
         pass
     else:
         pass
+
+def setVrayTextureDegamma(filenode):
+    if not mc.objExists( filenode ):
+        raise ValueError( 'The {0} is not exists!'.filenode )
+    elif not mc.nodeType( filenode ):
+        raise ValueError( 'The {0} is not file node!'.filenode )
+    try:
+        mel.eval('vray addAttributesFromGroup ' + filenode + ' vray_file_gamma 1;')
+        mc.setAttr( filenode + '.vrayFileGammaEnable', True )
+        # color space - 0: linear, 1: Gamma, 2: sRGB
+        mc.setAttr( filenode + '.vrayFileColorSpace', 2 )
+    except:
+        raise
 
 def reconnectShader(source, material):
     current_type = mc.nodeType( source )

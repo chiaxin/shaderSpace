@@ -45,3 +45,6 @@ ver 0.3.4 : Mar/ 20/ 2016
 ver 0.3.5 : Mar/ 29/ 2016
     1. Channels have been changed, increase to 12 channels.
     2. Fix core process
+
+ver 0.3.6 : Apr/ 13/ 2016
+    1. Add gamma correct method in VRay
