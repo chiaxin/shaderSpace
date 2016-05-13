@@ -78,7 +78,7 @@ def buildPlace2dTexture(mainname, mirrorU, mirrorV):
 def isExistsNodeType(typ):
     return ( typ in mc.ls( nodeTypes = True ) )
 
-def createShader(nlist, stype, cnames, checks, options, filters, rules):
+def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
     if not isExistsNodeType( stype ):
         mc.error( 'Unknown type : {0}'.format( stype ) )
         return
@@ -113,6 +113,14 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules):
             return
     # Shader create
     sname = mc.shadingNode( stype, name = sname, asShader = True )
+
+    # Preset, using source command
+    if preset:
+        presetPath = '{0}attrPresets/{1}/{2}.mel'.format( mc.internalVar( ups = True ), stype, preset )
+        if exists(presetPath):
+            mel.eval('source "{0}"'.format(presetPath))
+        else:
+            mc.warning( 'Preset mel not found : {1}'.format( presetPath ) )
 
     # Shading Group create
     sengine = mc.sets( renderable = True, noSurfaceShader = True, empty = True, \

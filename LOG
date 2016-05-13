@@ -48,3 +48,7 @@ ver 0.3.5 : Mar/ 29/ 2016
 
 ver 0.3.6 : Apr/ 13/ 2016
     1. Add gamma correct method in VRay
+================================================================
+ver 0.4.01 : May/ 15/ 2016
+    1. Fix whitespace problem of channel's name.
+    2. Add shader's attribute preset, Now can be set preset when creating.

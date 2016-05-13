@@ -4,8 +4,8 @@ kMayaVersion= maya.cmds.about( v = True )
 kCurrentOS  = maya.cmds.about( os = True )
 kLinearProfile = 'scene-linear Rec 709/sRGB'
 
-kVersion = '0.3.6'
-kLastUpdate = 'Apr, 13, 2016'
+kVersion = '0.4.01'
+kLastUpdate = 'May, 14, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
@@ -29,9 +29,9 @@ kChannelNames = ( \
 'ReflectionColor', 'SpecularColor', 'Transparency', 'Incandescence' )
 '''
 kChannelNames = ( \
-'Color', 'Diffuse Weight', 'Roughness', \
-'Reflectance', 'Reflection Color', 'Refl Glossiness', \
-'Transparency', 'Refraction Color', 'Refra Glossiness', \
+'Color', 'DiffuseWeight', 'Roughness', \
+'Reflectance', 'ReflectionColor', 'ReflGlossiness', \
+'Transparency', 'RefractionColor', 'RefraGlossiness', \
 'Bump', 'Incandescence', 'Opacity' )
 
 # This dictionary describe what plug-in necessary for shader
@@ -44,9 +44,9 @@ kShaderPlugins = { \
 # This dictionary describe label text on the buttons
 kShaderButtons = { \
 'blinn' : 'Blinn ( Maya )', \
-'mia_material_x_passes' : 'Material_x ( Mental Ray )', \
+'mia_material_x_passes' : 'Material_x ( MentalRay )', \
 'aiStandard' : 'AiStandard ( Arnold )', \
-'VRayMtl' : 'VRayMtl ( V Ray )' }
+'VRayMtl' : 'VRayMtl ( VRay )' }
 
 # This dictionary describe how to connect shading
 kConnectSG = { \

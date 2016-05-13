@@ -4,6 +4,8 @@ from config import kShadersList, kAboutContent, kShaderPlugins, kShaderButtons
 from config import kChannelNames, kVersion, kWebsite
 from config import kChannelsPanelAnn, kAssignAnn, kGammaCorrectAnn, kAutoFileAnn, kMirrorAnn
 from core import isVaildName, substituteVariables, createShader, reconnectShader
+from os import listdir
+from os.path import isdir, isfile, join
 import re
 import string
 import base
@@ -65,6 +67,10 @@ try:
     gParameters['AIL'] = int( optionsVariableMaps['AIL'] )
 except: 
     gParameters['AIL'] = int( optionsDefaultMaps['AIL'] )
+
+gShaderPresetDefinition = {}
+for shader in kShadersList:
+    gShaderPresetDefinition[shader] = ''
 '''
 try:
     gParameters = { \
@@ -465,9 +471,13 @@ class ActionsBlock( base.BaseBlock ):
     width = 300
     height= 160
     label = 'Shader Library'
+    presetsDir = mc.internalVar( ups = True ) + 'attrPresets/'
+    presetUnsetColor = ( 0.371, 0.371, 0.371 )
+    presetSetColor = ( 0.45, 0.6, 0.68 )
 
     def content(self):
         self.Col = mc.columnLayout( self.Col )
+        '''
         self.Tab = mc.tabLayout( self.Tab, imw = 2, imh = 3, h = 150, scr = True, cr = True )
         createSubTab = mc.columnLayout( 'createSubTab' )
         for sd in kShaderButtons.keys():
@@ -479,6 +489,39 @@ class ActionsBlock( base.BaseBlock ):
         presetsSubTab = mc.columnLayout( 'presetSubTab' )
         mc.setParent('..')
         mc.tabLayout( self.Tab, e = True, tl = ( (createSubTab, 'Create'), ( presetsSubTab, 'Presets') ) )
+        '''
+        createSubTab = mc.columnLayout( 'createSubTab' )
+        for sd in kShaderButtons.keys():
+            shaderButton = mc.button( l = kShaderButtons[sd], bgc = self.presetUnsetColor, \
+            en = mc.pluginInfo( kShaderPlugins[sd], q = True, l = True ) \
+            or kShaderPlugins[sd] == 'none', c = partial( self.doIt, sd ) )
+            presets = self.getPresets(sd)
+            if presets:
+                mc.popupMenu( parent = shaderButton )
+                mc.radioMenuItemCollection()
+                mc.menuItem( l = '-----', rb = True, c = partial( self.unsetPreset, sd, shaderButton ) )
+                for preset in presets:
+                    mc.menuItem( l = preset, rb = False,  c = partial( self.setPreset, sd, preset, shaderButton ) )
+        mc.setParent('..')
+
+    def getPresets(self, *args):
+        presets = []
+        if args[0] in kShadersList:
+            searchDir = self.presetsDir + '/' + args[0]
+            if isdir( searchDir ):
+                presets = [ f[:-4] for f in listdir(searchDir) \
+                if isfile(join(searchDir, f)) and f[-3:] == 'mel' ]
+        return presets
+
+    def setPreset(self, *args):
+        gShaderPresetDefinition[ args[0] ] = args[1]
+        print '# {0} preset has been set : {1}'.format( args[0], args[1] )
+        mc.button( args[2], e = True, bgc = self.presetSetColor, l = kShaderButtons[args[0]] + ' ~' + args[1] )
+
+    def unsetPreset(self, *args):
+        gShaderPresetDefinition[ args[0] ] = ''
+        print '# {0} preset has been set default'.format( args[0] )
+        mc.button( args[1], e = True, bgc = self.presetUnsetColor, l = kShaderButtons[args[0]] )
 
     def doIt(self, *args):
         stype = args[0] # material type
@@ -486,6 +529,7 @@ class ActionsBlock( base.BaseBlock ):
         nlist = NamingBlock.contents  # str in List
         channels_check= ChannelsBlock.checks # int in List
         channels_filter = ChannelsBlock.filters # int in List
+        preset = gShaderPresetDefinition[stype]
 
         options = []
         options.append( OptionsBlock.checks[0] )
@@ -501,14 +545,22 @@ class ActionsBlock( base.BaseBlock ):
 
         rules = gNameRuleMaps # Name rules in Dict 
 
-        ans = mc.confirmDialog( t = 'Shader Create', m = '{0} create?'.format(stype), \
+        message = ''
+        if preset:
+            message = 'Create {0} ~ {1}?'.format(stype, preset)
+        else:
+            message = 'Create {0}?'.format(stype)
+        ans = mc.confirmDialog( t = 'Shader Create', m = message, \
         button=['Yes','No'], db = 'Yes', cb = 'No', ds = 'No' )
         if ans == 'No': return
 
         selections = mc.ls( sl = True )
 
         sd, sg = createShader( nlist, stype, channels_name, \
-        channels_check, options, channels_filter, rules )
+        channels_check, options, channels_filter, rules, preset )
+        if not sd:
+            print '# Create shader process canceled'
+            return
 
         print 'New shader has been created : {0}, {1}'.format(sd, sg)
 
@@ -984,9 +1036,12 @@ def loadSetting():
             if not curline: break
             parser = syntaxParser.match(curline)
             if parser:
-                if parser.group(1)   == 'let':      analysisLet( parser.group(2), parser.group(3) )
-                elif parser.group(1) == 'filter':   analysisFilter( parser.group(2), parser.group(3) )
-                elif parser.group(1) == 'set':      analysisSet( parser.group(2), parser.group(3) )
+                if parser.group(1) == 'let':
+                    analysisLet( parser.group(2), parser.group(3) )
+                elif parser.group(1) == 'filter':
+                    analysisFilter( parser.group(2), parser.group(3) )
+                elif parser.group(1) == 'set':
+                    analysisSet( parser.group(2), parser.group(3) )
     except:
         raise
     print('Shader space option has been loaded. : {0}'.format( config_files[0] ) )
