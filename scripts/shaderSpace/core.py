@@ -1,5 +1,5 @@
 import sys
-from os.path import exists
+import os.path
 import string
 import maya.cmds as mc
 import maya.mel as mel
@@ -113,23 +113,23 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
         if ans == 'No':
             return
     # Shader create
-    sname = mc.shadingNode( stype, name = sname, asShader = True )
+    sname = mc.shadingNode(stype, name=sname, asShader=True)
 
     # Preset, using source command
     if preset:
-        presetPath = '{0}attrPresets/{1}/{2}.mel'.format( mc.internalVar( ups = True ), stype, preset )
-        if exists(presetPath):
+        presetPath = '{0}attrPresets/{1}/{2}.mel'.format(mc.internalVar(ups=True), stype, preset)
+        if os.path.isfile(presetPath):
             mel.eval('source "{0}"'.format(presetPath))
         else:
-            mc.warning( 'Preset mel not found : {1}'.format( presetPath ) )
+            mc.warning('Preset mel not found : {1}'.format(presetPath))
 
     # Shading Group create
-    sengine = mc.sets( renderable = True, noSurfaceShader = True, empty = True, \
-    name = substituteVariables( shadingRule, nlist ) )
+    sengine = mc.sets(renderable=True, noSurfaceShader=True, empty=True, \
+    name=substituteVariables(shadingRule, nlist))
 
     # Rename material info
-    material_info = mc.listConnections( sengine, s = False, d = True, type = 'materialInfo' )[0]
-    material_info = mc.rename( material_info, substituteVariables( matinfoRule, nlist ) )
+    material_info = mc.listConnections(sengine, s=False, d=True, type='materialInfo')[0]
+    material_info = mc.rename(material_info, substituteVariables(matinfoRule, nlist))
 
     # Get connection pair
     connect_table = kRelatives[stype]
@@ -147,12 +147,13 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
             continue
 
         filenode = mc.shadingNode( 'file', \
-        name = substituteVariables( textureRule, nlist, cnames[idx] ), asTexture = True )
+        name=substituteVariables( textureRule, nlist, cnames[idx] ), asTexture=True)
 
         aAttr = pairs[0]
         bAttr = pairs[1]
 
-        isColorChannel = ( aAttr == 'outColor' )
+        # This texture is a color map?
+        isColorChannel = (aAttr == 'outColor')
 
         # Exclude bump map in VRay, because Bump map in VRay is outColor way.
         if stype in kVrayColorMangementShaders and bAttr == 'bumpMap':
@@ -171,7 +172,7 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
         if autopath_on:
             file_path = substituteVariables( autoPathRule, nlist, cnames[idx] )
             if ignore:
-                if exists( file_path ):
+                if os.path.isfile(file_path):
                     mc.setAttr( filenode + '.fileTextureName', file_path, type = 'string' )
                 else:
                     print '{0} is not exists. skip.'.format( file_path )

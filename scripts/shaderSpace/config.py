@@ -8,7 +8,7 @@ kLinearProfile = 'scene-linear Rec 709/sRGB'
 kVrayDegammaMethod = 1
 kVrayDegammaValue = 2.2
 
-kVersion = '0.4.11'
+kVersion = '0.4.12'
 kLastUpdate = 'May, 18, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
