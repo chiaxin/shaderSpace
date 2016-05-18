@@ -4,8 +4,12 @@ kMayaVersion= maya.cmds.about( v = True )
 kCurrentOS  = maya.cmds.about( os = True )
 kLinearProfile = 'scene-linear Rec 709/sRGB'
 
-kVersion = '0.4.01'
-kLastUpdate = 'May, 14, 2016'
+# Vray color space - 0: linear, 1: Gamma, 2: sRGB
+kVrayDegammaMethod = 1
+kVrayDegammaValue = 2.2
+
+kVersion = '0.4.11'
+kLastUpdate = 'May, 18, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 

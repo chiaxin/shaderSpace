@@ -28,28 +28,6 @@ for key in ('APR', 'SNR', 'SGN', 'TEX', 'B2D', 'P2D', 'MIF'):
         gNameRuleMaps[ key ] = optionsDefaultMaps[ key ].encode( 'ascii', 'ignore' )
     except:
         raise
-'''
-try:
-    gNameRuleMaps = { \
-    'APR' : mc.optionVar( q = optionsVariableMaps['APR'] ).encode( 'ascii', 'ignore' ), \
-    'SNR' : mc.optionVar( q = optionsVariableMaps['SNR'] ).encode( 'ascii', 'ignore' ), \
-    'SGN' : mc.optionVar( q = optionsVariableMaps['SGN'] ).encode( 'ascii', 'ignore' ), \
-    'TEX' : mc.optionVar( q = optionsVariableMaps['TEX'] ).encode( 'ascii', 'ignore' ), \
-    'B2D' : mc.optionVar( q = optionsVariableMaps['B2D'] ).encode( 'ascii', 'ignore' ), \
-    'P2D' : mc.optionVar( q = optionsVariableMaps['P2D'] ).encode( 'ascii', 'ignore' ), \
-    'MIF' : mc.optionVar( q = optionsVariableMaps['MIF'] ).encode( 'ascii', 'ignore' ), \
-    'none': '' }
-except:
-    gNameRuleMaps = { \
-    'APR' : optionsDefaultMaps['APR'] , \
-    'SNR' : optionsDefaultMaps['SNR'] , \
-    'SGN' : optionsDefaultMaps['SGN'] , \
-    'TEX' : optionsDefaultMaps['TEX'] , \
-    'B2D' : optionsDefaultMaps['B2D'] , \
-    'P2D' : optionsDefaultMaps['P2D'] , \
-    'MIF' : optionsDefaultMaps['MIF'] , \
-    'none': '' }
-'''
 gParameters = {}
 try: 
     gParameters['BMP'] = mc.optionVar( q = optionsVariableMaps['BMP'] )
@@ -71,20 +49,6 @@ except:
 gShaderPresetDefinition = {}
 for shader in kShadersList:
     gShaderPresetDefinition[shader] = ''
-'''
-try:
-    gParameters = { \
-    'BMP' : mc.optionVar( q = optionsVariableMaps['BMP'] ), \
-    'MIR' : 0, \
-    'IGN' : int( optionsVariableMaps['IGN'] ), \
-    'AIL' : int( optionsVariableMaps['AIL'] ) }
-except:
-    gParameters = { \
-    'BMP' : optionsDefaultMaps['BMP'], \
-    'MIR' : 0, \
-    'IGN' : int( optionsDefaultMaps['IGN'] ), \
-    'AIL' : int( optionsDefaultMaps['AIL'] ) }
-'''
 
 # -----------------------------------------------
 # : Read option variablies end
@@ -122,62 +86,59 @@ class MainMenu:
     Ign = 'shaderSpaceIgnCheck'
     Ail = 'shaderSpaceAilCheck'
     def build(self):
-        self.Col = mc.columnLayout( self.Col)
-        self.Bar = mc.menuBarLayout( self.Bar )
+        self.Col = mc.columnLayout(self.Col)
+        self.Bar = mc.menuBarLayout(self.Bar)
 
-        mc.menu( l = 'File' )
-        mc.menuItem( l = 'Save',    c = lambda *args : optionVarsUpdate()   )
-        mc.menuItem( l = 'Reset',   c = lambda *args : optionVarsReset()    )
-        mc.menuItem( d = True )
-        mc.menuItem( l = 'Export',  c = lambda *args : exportSetting()      )
-        mc.menuItem( l = 'Load',    c = lambda *args : loadSetting()        )
-        mc.menuItem( d = True )
-        mc.menuItem( l = 'Clean',   c = lambda *args : optionVarsCleanUp()  )
+        mc.menu(l='File')
+        mc.menuItem(l='Save',   c=lambda *args : optionVarsUpdate())
+        mc.menuItem(l='Reset',  c=lambda *args : optionVarsReset())
+        mc.menuItem(d=True)
+        mc.menuItem(l='Export', c=lambda *args : exportSetting())
+        mc.menuItem(l='Load',   c=lambda *args : loadSetting())
+        mc.menuItem(d=True)
+        mc.menuItem(l='Clean',  c=lambda *args : optionVarsCleanUp())
 
-        mc.menu( l = 'Edit' )
-        mc.menuItem( l = 'Node Name', sm = True, to = True )
-        mc.menuItem( l = 'Shader',          c = lambda *args : ruleSettingUI( 'SNR', 'Shader') )
-        mc.menuItem( l = 'Shading Group',   c = lambda *args : ruleSettingUI( 'SGN', 'Shading Group' ) )
-        mc.menuItem( l = 'Texture',         c = lambda *args : ruleSettingUI( 'TEX', 'Texture Node' ) )
-        mc.menuItem( l = 'Bump2d',          c = lambda *args : ruleSettingUI( 'B2D', 'Bump2d' ) )
-        mc.menuItem( l = 'Place2dTexture',  c = lambda *args : ruleSettingUI( 'P2D', 'Place2dTexture' ) )
-        mc.menuItem( l = 'materialInfo',    c = lambda *args : ruleSettingUI( 'MIF', 'Material Info' ) )
-        mc.setParent( '..', menu = True )
+        mc.menu(l='Edit')
+        mc.menuItem(l= 'Node Name', sm=True, to=True)
+        mc.menuItem(l='Shader',         c=lambda *args : ruleSettingUI( 'SNR', 'Shader'))
+        mc.menuItem(l='Shading Group',  c=lambda *args : ruleSettingUI( 'SGN', 'Shading Group'))
+        mc.menuItem(l='Texture',        c=lambda *args : ruleSettingUI( 'TEX', 'Texture Node'))
+        mc.menuItem(l='Bump2d',         c=lambda *args : ruleSettingUI( 'B2D', 'Bump2d'))
+        mc.menuItem(l='Place2dTexture', c=lambda *args : ruleSettingUI( 'P2D', 'Place2dTexture'))
+        mc.menuItem(l='materialInfo',   c=lambda *args : ruleSettingUI( 'MIF', 'Material Info'))
+        mc.setParent('..', menu=True)
+
         self.Ign = mc.menuItem( self.Ign, l = 'Ignore auto path if not found', \
         cb = bool( gParameters['IGN'] ), c = lambda * args : self.toggleIGN() )
         self.Ail = mc.menuItem( self.Ail, l = 'Alpha Is Luminance if outAlpha', \
         cb = bool( gParameters['AIL'] ), c = lambda *args : self.toggleAIL() )
 
-        mc.menu( l = 'Tools' )
-        mc.menuItem( l = 'UV Snap Shot', \
-        c = partial( ssTools, 'uvsnapshot', 'Batch UV Snapshot' ) )
-        mc.menuItem( l = 'Export Meshes', \
-        c = partial( ssTools, 'exportMesh', 'Batch Export Meshes' ) )
-        mc.menuItem( l = 'Export Shaders', \
-        c = partial( ssTools, 'exportShader', 'Export Shaders' ) )
-        mc.menuItem( l = 'Create PSD', \
-        c = partial( ssTools, 'createPsd', 'Create Photoshop File' ) )
+        mc.menu(l='Tools')
+        mc.menuItem(l='UV Snap Shot',   c=partial(ssTools, 'uvsnapshot', 'Batch UV Snapshot'))
+        mc.menuItem(l='Export Meshes',  c=partial(ssTools, 'exportMesh', 'Batch Export Meshes'))
+        mc.menuItem(l='Export Shaders', c=partial(ssTools, 'exportShader', 'Export Shaders'))
+        mc.menuItem(l='Create PSD',     c=partial(ssTools, 'createPsd', 'Create Photoshop File'))
 
-        mc.menu( l = 'Rebuild' )
+        mc.menu(l='Rebuild')
         for shader in kShadersList:
-            if mc.pluginInfo( kShaderPlugins[ shader ], q = True, loaded = True ) or \
-            kShaderPlugins[ shader ] == 'none':
-                mc.menuItem( l = 'To ' + shader, c = partial( self.reconnect, shader) )
+            if mc.pluginInfo(kShaderPlugins[shader], q=True, loaded=True) or \
+            kShaderPlugins[shader] == 'none':
+                mc.menuItem(l='To '+shader, c=partial(self.reconnect, shader))
             else:
-                mc.menuItem( l = 'To ' + shader, en = False )
+                mc.menuItem(l='To '+shader, en=False)
 
-        mc.menu( l = 'Help' )
-        mc.menuItem( l ='Help',  c = lambda *args : ssHelp() )
-        mc.menuItem( l ='About', c = lambda *args : ssAbout() )
+        mc.menu(l='Help')
+        mc.menuItem(l='Help',  c=lambda *args : ssHelp())
+        mc.menuItem(l='About', c=lambda *args : ssAbout())
 
         mc.setParent('..')
         mc.setParent('..')
 
     def toggleIGN(self):
-        gParameters['IGN'] = int( mc.menuItem(self.Ign, q = True, cb = True ) )
+        gParameters['IGN'] = int(mc.menuItem(self.Ign, q=True, cb=True))
 
     def toggleAIL(self):
-        gParameters['AIL'] = int( mc.menuItem(self.Ail, q = True, cb = True ) )
+        gParameters['AIL'] = int(mc.menuItem(self.Ail, q=True, cb=True))
 
     def reconnect(self, *args):
         selections = [ s for s in mc.ls( sl = True ) if mc.nodeType(s) in kShadersList ]
@@ -186,10 +147,10 @@ class MainMenu:
             return
         all_shaders = []
         for selected in selections:
-            shader, shadingGroup = reconnectShader( selected, args[0] )
-            print '{0} rebuild : {1} ( {2} )'.format( selected, ( shader + ', ' + shadingGroup ), args[0] )
-            all_shaders.append( shader )
-        mc.select( all_shaders, r = True )
+            shader, shadingGroup = reconnectShader(selected, args[0])
+            print '{0} rebuild : {1} ( {2} )'.format(selected, (shader + ', ' + shadingGroup), args[0])
+            all_shaders.append(shader)
+        mc.select(all_shaders, r=True )
 
 class NamingBlock( base.BaseBlock ):
     Frl = 'shaderSpaceNamingFRL'
@@ -477,19 +438,6 @@ class ActionsBlock( base.BaseBlock ):
 
     def content(self):
         self.Col = mc.columnLayout( self.Col )
-        '''
-        self.Tab = mc.tabLayout( self.Tab, imw = 2, imh = 3, h = 150, scr = True, cr = True )
-        createSubTab = mc.columnLayout( 'createSubTab' )
-        for sd in kShaderButtons.keys():
-            mc.button( l = kShaderButtons[sd], \
-            en = mc.pluginInfo( kShaderPlugins[sd], q = True, l = True ) \
-            or kShaderPlugins[sd] == 'none', c = partial( self.doIt, sd ) )
-        mc.setParent('..')
-
-        presetsSubTab = mc.columnLayout( 'presetSubTab' )
-        mc.setParent('..')
-        mc.tabLayout( self.Tab, e = True, tl = ( (createSubTab, 'Create'), ( presetsSubTab, 'Presets') ) )
-        '''
         createSubTab = mc.columnLayout( 'createSubTab' )
         for sd in kShaderButtons.keys():
             shaderButton = mc.button( l = kShaderButtons[sd], bgc = self.presetUnsetColor, \
@@ -532,16 +480,16 @@ class ActionsBlock( base.BaseBlock ):
         preset = gShaderPresetDefinition[stype]
 
         options = []
-        options.append( OptionsBlock.checks[0] )
-        options.append( OptionsBlock.checks[1] )
-        options.append( OptionsBlock.checks[2] )
+        options.append(OptionsBlock.checks[0])
+        options.append(OptionsBlock.checks[1])
+        options.append(OptionsBlock.checks[2])
         if OptionsBlock.checks[3] == False:
             options.append( -1 )
         else:
-            options.append( gParameters['MIR'] )
-        options.append( gParameters['BMP'] )
-        options.append( gParameters['IGN'] )
-        options.append( gParameters['AIL'] )
+            options.append(gParameters['MIR'])
+        options.append(gParameters['BMP'])
+        options.append(gParameters['IGN'])
+        options.append(gParameters['AIL'])
 
         rules = gNameRuleMaps # Name rules in Dict 
 

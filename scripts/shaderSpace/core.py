@@ -7,6 +7,7 @@ from config import kShadersList, kRelatives, kDegammaValue, kConnectSG
 from config import kBumpChannel, kShaderPlugins
 from config import kMayaVersion, kCurrentOS
 from config import kColorManagementShaders, kLinearProfile, kVrayColorMangementShaders
+from config import kVrayDegammaMethod, kVrayDegammaValue
 
 def isVaildName(name):
     if not name:
@@ -160,15 +161,11 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
         # Gamma correct setting :
         # In maya built-in shader or MentalRay, we need to set linear profile if is not color channel.
         # In VRay, we need to add VRay degamma attribute, and set it to sRGB if is color channel.
-        if stype in kColorManagementShaders and not isColorChannel:
-            setColorSpaceToLinear( filenode, kMayaVersion )
-        elif stype in kVrayColorMangementShaders and isColorChannel:
-            try:
-                setVrayTextureDegamma( filenode )
-            except ValueError as detail:
-                mc.error( detail )
-            except:
-                raise
+        if gamma_correct_on:
+            if stype in kColorManagementShaders and not isColorChannel:
+                setColorSpaceToLinear(filenode, kMayaVersion)
+            elif stype in kVrayColorMangementShaders and isColorChannel:
+                setVrayColorSpace(filenode, kVrayDegammaMethod, kVrayDegammaValue)
 
         # If auto file path is on
         if autopath_on:
@@ -227,6 +224,7 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
 
 def setColorSpaceToLinear(filenode, version):
     if version in [ '2014' ]:
+        # 0: Use Default Input Profile, 2: Linear sRGB, 3: sRGB
         mc.setAttr( filenode + '.colorProfile', 2 )
     elif version in [ '2015' ]:
         if kLinearProfile in mc.colorManagementCatalog( ltc = True, type = 'input' ):
@@ -234,20 +232,17 @@ def setColorSpaceToLinear(filenode, version):
         else:
             mc.warning( 'The {0} is not in color transforms'.format( kLinearProfile ) )
     elif version in [ '2016' ]:
+        # Not yet implement
         pass
     else:
         pass
 
-def setVrayTextureDegamma(filenode):
-    if not mc.objExists( filenode ):
-        raise ValueError( 'The {0} is not exists!'.filenode )
-    elif not mc.nodeType( filenode ):
-        raise ValueError( 'The {0} is not file node!'.filenode )
+def setVrayColorSpace(filenode, colorspace, gamma):
     try:
         mel.eval('vray addAttributesFromGroup ' + filenode + ' vray_file_gamma 1;')
-        mc.setAttr( filenode + '.vrayFileGammaEnable', True )
-        # color space - 0: linear, 1: Gamma, 2: sRGB
-        mc.setAttr( filenode + '.vrayFileColorSpace', 2 )
+        mc.setAttr(filenode + '.vrayFileGammaEnable', True)
+        mc.setAttr(filenode + '.vrayFileColorSpace', colorspace)
+        mc.setAttr(filenode + '.vrayFileGammaValue', gamma)
     except:
         raise
 

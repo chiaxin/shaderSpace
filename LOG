@@ -52,3 +52,7 @@ ver 0.3.6 : Apr/ 13/ 2016
 ver 0.4.01 : May/ 15/ 2016
     1. Fix whitespace problem of channel's name.
     2. Add shader's attribute preset, Now can be set preset when creating.
+
+ver 0.4.11 : May/ 18/ 2016
+    1. Fix gamma correct can't turn off problem.
+    2. Refine some code.
