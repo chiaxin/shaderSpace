@@ -71,9 +71,9 @@ def connectPlace2dTexture(fileNode, p2dNode):
         mc.connectAttr( ( p2dNode + '.' + attr[0] ), ( fileNode + '.' + attr[1] ), force=True)
 
 def buildPlace2dTexture(mainname, mirrorU, mirrorV):
-    p2d = mc.shadingNode( 'place2dTexture', name = mainname + '_place2dTexture', asUtility = True )
-    mc.setAttr( p2d + '.mirrorU', mirrorU )
-    mc.setAttr( p2d + '.mirrorV', mirrorV )
+    p2d = mc.shadingNode( 'place2dTexture', name=mainname, asUtility = True )
+    mc.setAttr(p2d + '.mirrorU', mirrorU)
+    mc.setAttr(p2d + '.mirrorV', mirrorV)
     return p2d
 
 def isExistsNodeType(typ):
@@ -98,6 +98,7 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
         bump_value      = options[4]
         ignore          = options[5]
         alpha_is_lum    = options[6]
+        sharedPlace2d   = options[7]
     except:
         sys.stderr.write( 'Failed to get options in create shader function' )
         raise
@@ -142,12 +143,13 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
 
     # Create and connect each channels
     newTextureList = []
-    for idx, pairs in enumerate( connect_table ):
+    newTextureChannels = []
+    for idx, pairs in enumerate(connect_table):
         if not checks[idx]:
             continue
 
         filenode = mc.shadingNode( 'file', \
-        name=substituteVariables( textureRule, nlist, cnames[idx] ), asTexture=True)
+        name=substituteVariables(textureRule, nlist, cnames[idx]), asTexture=True)
 
         aAttr = pairs[0]
         bAttr = pairs[1]
@@ -170,14 +172,14 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
 
         # If auto file path is on
         if autopath_on:
-            file_path = substituteVariables( autoPathRule, nlist, cnames[idx] )
+            file_path = substituteVariables(autoPathRule, nlist, cnames[idx])
             if ignore:
                 if os.path.isfile(file_path):
-                    mc.setAttr( filenode + '.fileTextureName', file_path, type = 'string' )
+                    mc.setAttr(filenode + '.fileTextureName', file_path, type='string')
                 else:
                     print '{0} is not exists. skip.'.format( file_path )
             else:
-                mc.setAttr( filenode + '.fileTextureName', file_path, type = 'string' )
+                mc.setAttr(filenode + '.fileTextureName', file_path, type='string')
 
         # If this texture is scalar
         if aAttr == 'outAlpha' and alpha_is_lum:
@@ -190,8 +192,8 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
         if idx == 9:
             #if stype in ['blinn', 'mia_material_x_passes', 'aiStandard']:
             if kBumpChannel[ stype ] == 'bump2d':
-                bump2d = mc.shadingNode( 'bump2d', \
-                name = substituteVariables( bump2dRule, nlist ), asUtility = True )
+                bump2d = mc.shadingNode('bump2d', \
+                name=substituteVariables(bump2dRule, nlist), asUtility=True)
                 mc.connectAttr( filenode + '.' + aAttr, bump2d + '.bumpValue', f = True )
                 mc.connectAttr( bump2d + '.outNormal', sname + '.' + bAttr, f = True )
                 mc.setAttr( bump2d + '.bumpDepth', bump_value )
@@ -202,25 +204,36 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
                     mc.setAttr( sname + '.bumpMult', bump_value )
         else:
             mc.connectAttr( filenode + '.' + aAttr, sname + '.' + bAttr )
-        newTextureList.append( filenode )
+        newTextureList.append(filenode)
+        newTextureChannels.append(cnames[idx])
 
-    if len( newTextureList ) != 0:
-        if mirror_tex == -1:
-            p2d = buildPlace2dTexture( substituteVariables( place2dRule, nlist ), 0, 0)
-        elif mirror_tex == 0:
-            p2d = buildPlace2dTexture( substituteVariables( place2dRule, nlist ), 1, 0)
-        elif mirror_tex == 1:
-            p2d = buildPlace2dTexture( substituteVariables( place2dRule, nlist ), 0, 1)
-        elif mirror_tex == 2:
-            p2d = buildPlace2dTexture( substituteVariables( place2dRule, nlist ), 1, 1)
+    # If Shared Place2dTexture is on, we create a place2dTexture node connect to each map.
+    # Otherwise, We need to create place2dTexture for each map.
+    uvMirror = [0, 0]
+    uvMirrorMethods = ((1,0), (0,1), (1,1))
+    if mirror_tex >= 0:
+        uvMirror = uvMirrorMethods[mirror_tex]
+
+    if sharedPlace2d and len(newTextureList) != 0:
+        p2d = buildPlace2dTexture(substituteVariables(place2dRule, nlist, 'shared'), uvMirror[0], uvMirror[1])
         for f in newTextureList:
-            connectPlace2dTexture( f, p2d )
-        mc.rename( p2d, substituteVariables( place2dRule, nlist ) )
+            connectPlace2dTexture(f, p2d)
+        #mc.rename(p2d, substituteVariables(place2dRule, nlist))
+    else:
+        for idx, f in enumerate(newTextureList):
+            if place2dRule.find('<channel>') == -1:
+                p2d = buildPlace2dTexture(substituteVariables( \
+                place2dRule + '_' + chr(idx+65), nlist), uvMirror[0], uvMirror[1])
+            else:
+                p2d = buildPlace2dTexture(substituteVariables( \
+                place2dRule, nlist, newTextureChannels[idx]), uvMirror[0], uvMirror[1])
+            connectPlace2dTexture(f, p2d)
 
     if assign_selected:
-        selections = mc.ls( sl = True, type = [ 'mesh', 'transform', 'nurbsSurface' ] )
+        selections = mc.ls(sl=True, type=['mesh', 'transform', 'nurbsSurface'])
         if selections:
             print selections
+
     return sname, sengine
 
 def setColorSpaceToLinear(filenode, version):

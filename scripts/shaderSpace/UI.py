@@ -27,24 +27,30 @@ for key in ('APR', 'SNR', 'SGN', 'TEX', 'B2D', 'P2D', 'MIF'):
     except KeyError: 
         gNameRuleMaps[ key ] = optionsDefaultMaps[ key ].encode( 'ascii', 'ignore' )
     except:
+        mc.warning('OptionVar load error occurred')
         raise
 gParameters = {}
 try: 
-    gParameters['BMP'] = mc.optionVar( q = optionsVariableMaps['BMP'] )
+    gParameters['BMP'] = mc.optionVar(q=optionsVariableMaps['BMP'])
 except: 
     gParameters['BMP'] = optionsDefaultMaps['BMP']
 
 gParameters['MIR'] = 0
+try: 
+    gParameters['IGN'] = mc.optionVar(q=optionsVariableMaps['IGN'])
+except: 
+    gParameters['IGN'] = int(optionsDefaultMaps['IGN'])
 
 try: 
-    gParameters['IGN'] = int( optionsVariableMaps['IGN'] )
+    gParameters['AIL'] = mc.optionVar(q=optionsVariableMaps['AIL'])
 except: 
-    gParameters['IGN'] = int( optionsDefaultMaps['IGN'] )
+    gParameters['AIL'] = int(optionsDefaultMaps['AIL'])
 
-try: 
-    gParameters['AIL'] = int( optionsVariableMaps['AIL'] )
-except: 
-    gParameters['AIL'] = int( optionsDefaultMaps['AIL'] )
+try:
+    gParameters['STP'] = mc.optionVar(q=optionsVariableMaps['STP'])
+except:
+    gParameters['STP'] = int(optionsDefaultMaps['STP'])
+
 
 gShaderPresetDefinition = {}
 for shader in kShadersList:
@@ -85,6 +91,7 @@ class MainMenu:
     Bar = 'shaderSpaceMainMenuBar'
     Ign = 'shaderSpaceIgnCheck'
     Ail = 'shaderSpaceAilCheck'
+    Stp = 'shaderSpaceStpCheck'
     def build(self):
         self.Col = mc.columnLayout(self.Col)
         self.Bar = mc.menuBarLayout(self.Bar)
@@ -108,10 +115,12 @@ class MainMenu:
         mc.menuItem(l='materialInfo',   c=lambda *args : ruleSettingUI( 'MIF', 'Material Info'))
         mc.setParent('..', menu=True)
 
-        self.Ign = mc.menuItem( self.Ign, l = 'Ignore auto path if not found', \
-        cb = bool( gParameters['IGN'] ), c = lambda * args : self.toggleIGN() )
-        self.Ail = mc.menuItem( self.Ail, l = 'Alpha Is Luminance if outAlpha', \
-        cb = bool( gParameters['AIL'] ), c = lambda *args : self.toggleAIL() )
+        self.Ign = mc.menuItem(self.Ign, l='Ignore auto path if not found', \
+        cb=bool(gParameters['IGN']), c=lambda *args : self.toggleIGN())
+        self.Ail = mc.menuItem(self.Ail, l='Alpha Is Luminance if outAlpha', \
+        cb=bool(gParameters['AIL']), c=lambda *args : self.toggleAIL())
+        self.Stp = mc.menuItem(self.Stp, l='Shared Place2dTexture', \
+        cb=bool(gParameters['STP']), c=lambda *args : self.toggleSTP())
 
         mc.menu(l='Tools')
         mc.menuItem(l='UV Snap Shot',   c=partial(ssTools, 'uvsnapshot', 'Batch UV Snapshot'))
@@ -139,6 +148,9 @@ class MainMenu:
 
     def toggleAIL(self):
         gParameters['AIL'] = int(mc.menuItem(self.Ail, q=True, cb=True))
+
+    def toggleSTP(self):
+        gParameters['STP'] = int(mc.menuItem(self.Stp, q=True, cb=True))
 
     def reconnect(self, *args):
         selections = [ s for s in mc.ls( sl = True ) if mc.nodeType(s) in kShadersList ]
@@ -490,6 +502,7 @@ class ActionsBlock( base.BaseBlock ):
         options.append(gParameters['BMP'])
         options.append(gParameters['IGN'])
         options.append(gParameters['AIL'])
+        options.append(gParameters['STP'])
 
         rules = gNameRuleMaps # Name rules in Dict 
 
@@ -505,7 +518,7 @@ class ActionsBlock( base.BaseBlock ):
         selections = mc.ls( sl = True )
 
         sd, sg = createShader( nlist, stype, channels_name, \
-        channels_check, options, channels_filter, rules, preset )
+        channels_check, options, channels_filter, rules, preset)
         if not sd:
             print '# Create shader process canceled'
             return
@@ -513,9 +526,9 @@ class ActionsBlock( base.BaseBlock ):
         print 'New shader has been created : {0}, {1}'.format(sd, sg)
 
         if selections:
-            mc.select( selections, r = True )
+            mc.select(selections, r=True)
         if options[0] and selections:
-            mc.sets( fe = sg )
+            mc.sets(fe=sg)
 
         optionVarsUpdate()
 # -----------------------------------------------
@@ -574,13 +587,13 @@ class SubRuleBlock( base.BaseBlock ):
             mc.deleteUI( win )
 
     def isVaild(self, *args):
-        user_input = mc.textField( self.ruleField, q = True, tx = True )
+        user_input = mc.textField(self.ruleField, q=True, tx=True)
         if len(user_input) == 0:
-            mc.textField( self.ruleField, e = True, tx = gNameRuleMaps[self.ruletype] )
+            mc.textField(self.ruleField, e=True, tx=gNameRuleMaps[self.ruletype])
             return False, 'Path can not be empty!'
-        elif user_input.find('<channel>') != -1 and self.ruletype not in ['APR', 'TEX']:
+        elif user_input.find('<channel>') != -1 and self.ruletype not in ['APR', 'TEX', 'P2D']:
             return False, '<channel> is for texture node or path only!'
-        instead_path = substituteVariables( user_input, ['_', '_', '_', '_'], 'channel' )
+        instead_path = substituteVariables(user_input, ['_', '_', '_', '_'], 'channel')
         if not isVaildName( instead_path ) and self.ruletype != 'APR':
             return False, 'Invaild : ' + user_input
         return True, user_input
@@ -1002,77 +1015,80 @@ def loadSetting():
 # : Option variable functions
 # -----------------------------------------------
 def optionVarsReset():
-    ans = mc.confirmDialog( t = 'Restore Options', m = 'Restore All Options?', 
+    ans = mc.confirmDialog( t = 'Restore Options', m = 'Restore All Options?',
     button=( 'Yes','No' ), db = 'Yes', cb = 'No', ds = 'No' )
     if ans == 'No': return
-    NamingBlock.contents[0] = optionsDefaultMaps.get('AST', 'undefined').encode( 'ascii', 'ignore' )
-    mc.textField( NamingBlock.kTextFields[0], e = True, tx = NamingBlock.contents[0] )
+    NamingBlock.contents[0] = optionsDefaultMaps.get('AST', 'undefined').encode('ascii', 'ignore')
+    mc.textField(NamingBlock.kTextFields[0], e=True, tx=NamingBlock.contents[0])
 
-    NamingBlock.contents[1] = optionsDefaultMaps.get('SDN', 'undefined').encode( 'ascii', 'ignore' )
-    mc.textField( NamingBlock.kTextFields[1], e = True, tx = NamingBlock.contents[1] )
+    NamingBlock.contents[1] = optionsDefaultMaps.get('SDN', 'undefined').encode('ascii', 'ignore')
+    mc.textField(NamingBlock.kTextFields[1], e=True, tx=NamingBlock.contents[1])
 
-    NamingBlock.contents[2] = optionsDefaultMaps.get('USR', 'undefined').encode( 'ascii', 'ignore' )
-    mc.textField( NamingBlock.kTextFields[2], e = True, tx = NamingBlock.contents[2] )
+    NamingBlock.contents[2] = optionsDefaultMaps.get('USR', 'undefined').encode('ascii', 'ignore')
+    mc.textField(NamingBlock.kTextFields[2], e=True, tx=NamingBlock.contents[2])
 
-    NamingBlock.contents[3] = optionsDefaultMaps.get('VER', 'undefined').encode( 'ascii', 'ignore' )
-    mc.textField( NamingBlock.kTextFields[3], e = True, tx = NamingBlock.contents[3] )
+    NamingBlock.contents[3] = optionsDefaultMaps.get('VER', 'undefined').encode('ascii', 'ignore')
+    mc.textField(NamingBlock.kTextFields[3], e=True, tx=NamingBlock.contents[3])
 
     for idx, check in enumerate( optionsDefaultMaps['OPT']):
-        mc.checkBox( OptionsBlock.kCheckBoxs[idx], e = True, v = check )
+        mc.checkBox( OptionsBlock.kCheckBoxs[idx], e=True, v=check)
         OptionsBlock.checks[idx] = int(check)
     for idx, short in enumerate(optionsDefaultMaps['CST']):
-        mc.menuItem( ChannelsBlock.sMenus[idx], e = True, l = short )
-        ChannelsBlock.shorts[idx] = short.encode( 'ascii', 'ignore' )
+        mc.menuItem( ChannelsBlock.sMenus[idx], e=True, l=short)
+        ChannelsBlock.shorts[idx] = short.encode('ascii', 'ignore')
     for idx, check in enumerate(optionsDefaultMaps['CCK']):
-        mc.checkBox( ChannelsBlock.checkBoxs[idx], e = True, v = check )
+        mc.checkBox(ChannelsBlock.checkBoxs[idx], e=True, v=check)
         ChannelsBlock.checks[idx] = int(check)
     for idx, value in enumerate(optionsDefaultMaps['CFR']):
-        mc.menuItem( ChannelsBlock.fMenus[idx][value], e = True, rb = True )
+        mc.menuItem(ChannelsBlock.fMenus[idx][value], e=True, rb=True)
         ChannelsBlock.filters[idx] = int(value)
-    mc.menuItem( MainMenu.Ign, e = True, cb = optionsDefaultMaps.get('IGN', True) )
-    mc.menuItem( MainMenu.Ail, e = True, cb = optionsDefaultMaps.get('AIL', True) )
+    mc.menuItem(MainMenu.Ign, e=True, cb=optionsDefaultMaps.get('IGN', True))
+    mc.menuItem(MainMenu.Ail, e=True, cb=optionsDefaultMaps.get('AIL', True))
+    mc.menuItem(MainMenu.Stp, e=True, cb=optionsDefaultMaps.get('STP', True))
 
 def optionVarsUpdate():
     optionVarsCleanUp()
-    optionVar[ optionsVariableMaps['AST'] ] = NamingBlock.contents[0].encode( 'ascii', 'ignore' )
-    optionVar[ optionsVariableMaps['SDN'] ] = NamingBlock.contents[1].encode( 'ascii', 'ignore' )
-    optionVar[ optionsVariableMaps['USR'] ] = NamingBlock.contents[2].encode( 'ascii', 'ignore' )
-    optionVar[ optionsVariableMaps['VER'] ] = NamingBlock.contents[3].encode( 'ascii', 'ignore' )
-    optionVar[ optionsVariableMaps['OPT'] ] = tuple( [ int(e) for e in OptionsBlock.checks ] )
-    optionVar[ optionsVariableMaps['APR'] ] = gNameRuleMaps['APR'].encode( 'ascii', 'ignore' )
-    optionVar[ optionsVariableMaps['CST'] ] = tuple( [ e.encode( 'ascii', 'ignore' ) for e in ChannelsBlock.shorts ] )
-    optionVar[ optionsVariableMaps['CCK'] ] = tuple( [ int(e) for e in ChannelsBlock.checks ] )
-    optionVar[ optionsVariableMaps['CFR'] ] = tuple( [ int(e) for e in ChannelsBlock.filters ] )
-    optionVar[ optionsVariableMaps['BMP'] ] = gParameters['BMP']
-    optionVar[ optionsVariableMaps['SNR'] ] = gNameRuleMaps['SNR'].encode( 'ascii', 'ignore' )
-    optionVar[ optionsVariableMaps['SGN'] ] = gNameRuleMaps['SGN'].encode( 'ascii', 'ignore' )
-    optionVar[ optionsVariableMaps['TEX'] ] = gNameRuleMaps['TEX'].encode( 'ascii', 'ignore' )
-    optionVar[ optionsVariableMaps['B2D'] ] = gNameRuleMaps['B2D'].encode( 'ascii', 'ignore' )
-    optionVar[ optionsVariableMaps['P2D'] ] = gNameRuleMaps['P2D'].encode( 'ascii', 'ignore' )
-    optionVar[ optionsVariableMaps['MIF'] ] = gNameRuleMaps['MIF'].encode( 'ascii', 'ignore' )
-    optionVar[ optionsVariableMaps['IGN'] ] = int(gParameters['IGN'])
-    optionVar[ optionsVariableMaps['AIL'] ] = int(gParameters['AIL'])
+    optionVar[optionsVariableMaps['AST']] = NamingBlock.contents[0].encode('ascii', 'ignore')
+    optionVar[optionsVariableMaps['SDN']] = NamingBlock.contents[1].encode('ascii', 'ignore')
+    optionVar[optionsVariableMaps['USR']] = NamingBlock.contents[2].encode('ascii', 'ignore')
+    optionVar[optionsVariableMaps['VER']] = NamingBlock.contents[3].encode('ascii', 'ignore')
+    optionVar[optionsVariableMaps['OPT']] = tuple([int(e) for e in OptionsBlock.checks ])
+    optionVar[optionsVariableMaps['APR']] = gNameRuleMaps['APR'].encode('ascii', 'ignore')
+    optionVar[optionsVariableMaps['CST']] = tuple([e.encode( 'ascii', 'ignore' ) for e in ChannelsBlock.shorts])
+    optionVar[optionsVariableMaps['CCK']] = tuple([int(e) for e in ChannelsBlock.checks])
+    optionVar[optionsVariableMaps['CFR']] = tuple([int(e) for e in ChannelsBlock.filters])
+    optionVar[optionsVariableMaps['BMP']] = gParameters['BMP']
+    optionVar[optionsVariableMaps['SNR']] = gNameRuleMaps['SNR'].encode('ascii', 'ignore')
+    optionVar[optionsVariableMaps['SGN']] = gNameRuleMaps['SGN'].encode('ascii', 'ignore')
+    optionVar[optionsVariableMaps['TEX']] = gNameRuleMaps['TEX'].encode('ascii', 'ignore')
+    optionVar[optionsVariableMaps['B2D']] = gNameRuleMaps['B2D'].encode('ascii', 'ignore')
+    optionVar[optionsVariableMaps['P2D']] = gNameRuleMaps['P2D'].encode('ascii', 'ignore')
+    optionVar[optionsVariableMaps['MIF']] = gNameRuleMaps['MIF'].encode('ascii', 'ignore')
+    optionVar[optionsVariableMaps['IGN']] = int(gParameters['IGN'])
+    optionVar[optionsVariableMaps['AIL']] = int(gParameters['AIL'])
+    optionVar[optionsVariableMaps['STP']] = int(gParameters['STP'])
 
 # For debug
 def _printAllOptionVar():
-    print optionVar[ optionsVariableMaps['AST'] ]
-    print optionVar[ optionsVariableMaps['SDN'] ]
-    print optionVar[ optionsVariableMaps['USR'] ]
-    print optionVar[ optionsVariableMaps['VER'] ]
-    print optionVar[ optionsVariableMaps['OPT'] ]
-    print optionVar[ optionsVariableMaps['APR'] ]
-    print optionVar[ optionsVariableMaps['CST'] ]
-    print optionVar[ optionsVariableMaps['CCK'] ]
-    print optionVar[ optionsVariableMaps['CFR'] ]
-    print optionVar[ optionsVariableMaps['BMP'] ]
-    print optionVar[ optionsVariableMaps['SNR'] ]
-    print optionVar[ optionsVariableMaps['SGN'] ]
-    print optionVar[ optionsVariableMaps['TEX'] ]
-    print optionVar[ optionsVariableMaps['B2D'] ]
-    print optionVar[ optionsVariableMaps['P2D'] ]
-    print optionVar[ optionsVariableMaps['MIF'] ]
-    print optionVar[ optionsVariableMaps['IGN'] ]
-    print optionVar[ optionsVariableMaps['AIL'] ]
+    print optionVar[optionsVariableMaps['AST']]
+    print optionVar[optionsVariableMaps['SDN']]
+    print optionVar[optionsVariableMaps['USR']]
+    print optionVar[optionsVariableMaps['VER']]
+    print optionVar[optionsVariableMaps['OPT']]
+    print optionVar[optionsVariableMaps['APR']]
+    print optionVar[optionsVariableMaps['CST']]
+    print optionVar[optionsVariableMaps['CCK']]
+    print optionVar[optionsVariableMaps['CFR']]
+    print optionVar[optionsVariableMaps['BMP']]
+    print optionVar[optionsVariableMaps['SNR']]
+    print optionVar[optionsVariableMaps['SGN']]
+    print optionVar[optionsVariableMaps['TEX']]
+    print optionVar[optionsVariableMaps['B2D']]
+    print optionVar[optionsVariableMaps['P2D']]
+    print optionVar[optionsVariableMaps['MIF']]
+    print optionVar[optionsVariableMaps['IGN']]
+    print optionVar[optionsVariableMaps['AIL']]
+    print optionVar[optionsVariableMaps['STP']]
 
 def _printAllOptions():
     print NamingBlock.contents[0]
@@ -1093,11 +1109,12 @@ def _printAllOptions():
     print gNameRuleMaps['MIF']
     print gParameters['IGN']
     print gParameters['AIL']
+    print gParameters['STP']
 
 def optionVarsCleanUp():
     for key in optionsVariableMaps.keys():
-        if mc.optionVar( ex = optionsVariableMaps[ key ] ):
-            mc.optionVar( remove = optionsVariableMaps[ key ] )
+        if mc.optionVar(ex=optionsVariableMaps[key]):
+            mc.optionVar(remove=optionsVariableMaps[key])
 # -----------------------------------------------
 # : Option variable functions end
 # -----------------------------------------------

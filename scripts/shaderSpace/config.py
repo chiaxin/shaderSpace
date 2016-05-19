@@ -8,23 +8,17 @@ kLinearProfile = 'scene-linear Rec 709/sRGB'
 kVrayDegammaMethod = 1
 kVrayDegammaValue = 2.2
 
-kVersion = '0.4.12'
-kLastUpdate = 'May, 18, 2016'
+kVersion = '0.4.20'
+kLastUpdate = 'May, 20, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
 kDegammaValue = 0.454
 
 # List shaders supported
-kShadersList = ( \
-'blinn', 'mia_material_x_passes', 'aiStandard', 'VRayMtl' )
-
-kColorManagementShaders = ( \
-'blinn', 'mia_material_x_passes'
-)
-
-kVrayColorMangementShaders = ( \
-'VRayMtl' )
+kShadersList = ('blinn', 'mia_material_x_passes', 'aiStandard', 'VRayMtl')
+kColorManagementShaders = ('blinn', 'mia_material_x_passes')
+kVrayColorMangementShaders = ('VRayMtl')
 
 # The channel's name in tuple
 '''
@@ -153,7 +147,8 @@ optionsDefaultMaps = { \
 'P2D' : '<asset>_<shader>_place2dTexture', \
 'MIF' : '<asset>_<shader>_materialInfo', \
 'IGN' : 0, \
-'AIL' : 1 }
+'AIL' : 1, \
+'STP' : 1 }
 
 # OptionVars name
 optionsVariableMaps = { \
@@ -174,7 +169,8 @@ optionsVariableMaps = { \
 'P2D' : 'shaderSpacePlace2dTextureRuleStrOptVar', \
 'MIF' : 'shaderSpaceMaterialInfoRuleStrOptVar', \
 'IGN' : 'shaderSpaceIgnoreTexWhenNotExistsIntOptVar', \
-'AIL' : 'shaderSpaceAlphaIsLuminaIntOptVar' }
+'AIL' : 'shaderSpaceAlphaIsLuminaIntOptVar', \
+'STP' : 'shaderSpaceSharedPlace2dTextureOptVar'}
 
 kChannelsPanelAnn = '''RMB can be change short name
 Ctrl + RMB can be change texture filter

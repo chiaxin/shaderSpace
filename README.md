@@ -2,7 +2,7 @@
 
 The Autodesk Maya script that can be build shader with texture and connections more faster and convenient.
 
-Version 0.2.5
+Version 0.4.20
 
 #How to use
 

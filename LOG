@@ -56,3 +56,6 @@ ver 0.4.01 : May/ 15/ 2016
 ver 0.4.11 : May/ 18/ 2016
     1. Fix gamma correct can't turn off problem.
     2. Refine some code.
+
+ver 0.4.20 : May/ 19/ 2016
+    1. Add new way in place2d - shared place2dTexture and non-shared.
