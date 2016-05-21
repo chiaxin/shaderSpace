@@ -1,6 +1,7 @@
 import sys
 import os.path
 import string
+from functools import partial
 import maya.cmds as mc
 import maya.mel as mel
 from config import kShadersList, kRelatives, kDegammaValue, kConnectSG
@@ -25,31 +26,26 @@ def isVaildName(name):
             return False
     return True
 
-def substituteVariables(rule, name_list, channel=''):
+def substituteVariables(rule, **kwargs):
+    # kwargs: asset, shader, user, version, channel
     if not rule:
         return ''
-    # Get variable from text field
-    asset = name_list[0]
-    shade = name_list[1]
-    user  = name_list[2]
-    vers  = name_list[3]
-    root = mc.workspace( q = True, rootDirectory=True )
-    # Replace every variabeles
-    rule = rule.replace( '<asset>', asset )
-    rule = rule.replace( '<shader>', shade )
-    rule = rule.replace( '<user>', user )
-    rule = rule.replace( '<version>', vers )
-    rule = rule.replace( '<root>',  root )
+    # There get variable keywords and replace.
+    rule = rule.replace('<asset>',  kwargs.get('asset', 'asset'))
+    rule = rule.replace('<shader>', kwargs.get('shader', 'shader'))
+    rule = rule.replace('<user>',   kwargs.get('user', 'user'))
+    rule = rule.replace('<version>',kwargs.get('version', 'version'))
+    rule = rule.replace('<root>',  mc.workspace(q=True, rootDirectory=True))
     # If channel is filled, replace it
-    if channel != '':
-        rule = rule.replace('<channel>', channel)
+    if kwargs.has_key('channel'):
+        rule = rule.replace('<channel>', kwargs.get('channel', ''))
     # Determine camel case format
     buffer = rule.split('<c>')
     for idx in range(len(buffer)-1):
-        if buffer[idx][-1] in string.lowercase[0:]:
-            buffer[idx+1] = buffer[idx+1][:1].upper() + buffer[idx+1][1:]
-        elif buffer[idx][-1] in string.uppercase[0:]:
-            buffer[idx+1] = buffer[idx+1][:1].lower() + buffer[idx+1][1:]
+        if buffer[idx][-1].islower():
+            buffer[idx+1] = buffer[idx+1][0].upper() + buffer[idx+1][1:]
+        elif buffer[idx][-1].isupper():
+            buffer[idx+1] = buffer[idx+1][0].lower() + buffer[idx+1][1:]
     return ''.join(buffer).replace('\\', '/')
 
 def connectPlace2dTexture(fileNode, p2dNode):
@@ -77,79 +73,85 @@ def buildPlace2dTexture(mainname, mirrorU, mirrorV):
     return p2d
 
 def isExistsNodeType(typ):
-    return ( typ in mc.ls( nodeTypes = True ) )
+    return (typ in mc.ls(nodeTypes=True))
 
-def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
-    if not isExistsNodeType( stype ):
-        mc.error( 'Unknown type : {0}'.format( stype ) )
-        return
+def createShader(*args, **kwargs):
     try:
-        autoPathRule= rules['APR']
-        shaderRule  = rules['SNR']
-        shadingRule = rules['SGN']
-        textureRule = rules['TEX']
-        bump2dRule  = rules['B2D']
-        place2dRule = rules['P2D']
-        matinfoRule = rules['MIF']
-        assign_selected = options[0]
-        gamma_correct_on= options[1]
-        autopath_on     = options[2]
-        mirror_tex      = options[3]
-        bump_value      = options[4]
-        ignore          = options[5]
-        alpha_is_lum    = options[6]
-        sharedPlace2d   = options[7]
+        shaderType = kwargs['shaderType']
+        preset = kwargs['preset']
+        cnames = kwargs['channelNames']
+        checks = kwargs['checks']
+        filters = kwargs['filters']
+        autoPathRule= kwargs['autopathRule']
+        shaderRule  = kwargs['shaderRule']
+        shadingRule = kwargs['shadingGroupRule']
+        textureRule = kwargs['textureRule']
+        bump2dRule  = kwargs['bump2dRule']
+        place2dRule = kwargs['place2dTextureRule']
+        matinfoRule = kwargs['materialInfoRule']
+        isGammaCorrect = kwargs['isGammaCorrect']
+        isAutopath = kwargs['isAutopath']
+        isUvMirror = kwargs['isUvMirror']
+        bumpValue = kwargs['bumpValue']
+        isIgnoreTextureIsNotExists = kwargs['igroneTexIsNotExists']
+        isAlphaIsLum = kwargs['isAlphaIsLum']
+        isSharedPlace2dTexture = kwargs['isSharedP2d']
     except:
-        sys.stderr.write( 'Failed to get options in create shader function' )
+        mc.warning('Failed to get options in create shader function')
         raise
-
-    sname = substituteVariables( shaderRule, nlist )
-
-    if not isVaildName( sname ):
-        mc.warning('Shader name is invaild : ' + sname )
+    substituteWordFunc = partial(substituteVariables, \
+    asset=kwargs.get('asset', 'asset'), user=kwargs.get('shader', 'shader'), \
+    shader=kwargs.get('user', 'user'), version=kwargs.get('version', 'version'))
+    if not isExistsNodeType(shaderType):
+        mc.error('Unknown type : {0}'.format(shaderType))
         return
-    if mc.objExists( sname ):
-        ans = mc.confirmDialog( t = 'Exists', m = 'Shader is exists, continue?', \
-        button=['Yes','No'], db = 'Yes', cb = 'No', ds = 'No' )
-        if ans == 'No':
-            return
+    mainShader = substituteWordFunc(shaderRule)
+
+    # Shader name is invaild?
+    if not isVaildName(mainShader):
+        mc.warning('Shader name is invaild : ' + mainShader)
+        return
+    # Shader is exists?
+    if mc.objExists(mainShader) and mc.confirmDialog(\
+    t='Exists', m='Shader is exists, continue?', button=['Yes', 'No'],\
+    db='Yes', cb='No', ds='No') == 'No': return
     # Shader create
-    sname = mc.shadingNode(stype, name=sname, asShader=True)
+    mainShader = mc.shadingNode(shaderType, name=mainShader, asShader=True)
 
     # Preset, using source command
     if preset:
-        presetPath = '{0}attrPresets/{1}/{2}.mel'.format(mc.internalVar(ups=True), stype, preset)
+        presetPath = '{0}attrPresets/{1}/{2}.mel'.format(mc.internalVar(ups=True), shaderType, preset)
         if os.path.isfile(presetPath):
             mel.eval('source "{0}"'.format(presetPath))
         else:
             mc.warning('Preset mel not found : {1}'.format(presetPath))
 
     # Shading Group create
-    sengine = mc.sets(renderable=True, noSurfaceShader=True, empty=True, \
-    name=substituteVariables(shadingRule, nlist))
+    shadingGroup = mc.sets(renderable=True, noSurfaceShader=True, \
+    empty=True, name=substituteWordFunc(shadingRule))
 
     # Rename material info
-    material_info = mc.listConnections(sengine, s=False, d=True, type='materialInfo')[0]
-    material_info = mc.rename(material_info, substituteVariables(matinfoRule, nlist))
+    materialInfo = mc.listConnections(shadingGroup, s=False, d=True, type='materialInfo')[0]
+    materialInfo = mc.rename(materialInfo, substituteWordFunc(matinfoRule))
 
     # Get connection pair
-    connect_table = kRelatives[stype]
-    connect_sg = kConnectSG[stype]
+    connectTable = kRelatives[shaderType]
+    connectSgTable = kConnectSG[shaderType]
 
     # Connect shader to shading group
-    for pair in connect_sg:
-        print '{0} connect to {1}'.format( pair[0], pair[1] )
-        mc.connectAttr( sname + '.' + pair[0], sengine + '.' + pair[1] )
+    for pair in connectSgTable:
+        #print '{0} connect to {1}'.format( pair[0], pair[1] )
+        mc.connectAttr(mainShader + '.' + pair[0], shadingGroup + '.' + pair[1])
 
     # Create and connect each channels
     newTextureList = []
     newTextureChannels = []
-    for idx, pairs in enumerate(connect_table):
+    for idx, pairs in enumerate(connectTable):
         if not checks[idx]:
             continue
 
-        filenode = mc.shadingNode( 'file', \
-        name=substituteVariables(textureRule, nlist, cnames[idx]), asTexture=True)
+        filenode = mc.shadingNode('file', \
+        name=substituteWordFunc(textureRule, channel=cnames[idx]), asTexture=True)
 
         aAttr = pairs[0]
         bAttr = pairs[1]
@@ -158,83 +160,76 @@ def createShader(nlist, stype, cnames, checks, options, filters, rules, preset):
         isColorChannel = (aAttr == 'outColor')
 
         # Exclude bump map in VRay, because Bump map in VRay is outColor way.
-        if stype in kVrayColorMangementShaders and bAttr == 'bumpMap':
+        if shaderType in kVrayColorMangementShaders and bAttr == 'bumpMap':
             isColorChannel = False
 
         # Gamma correct setting :
         # In maya built-in shader or MentalRay, we need to set linear profile if is not color channel.
         # In VRay, we need to add VRay degamma attribute, and set it to sRGB if is color channel.
-        if gamma_correct_on:
-            if stype in kColorManagementShaders and not isColorChannel:
+        if isGammaCorrect:
+            if shaderType in kColorManagementShaders and not isColorChannel:
                 setColorSpaceToLinear(filenode, kMayaVersion)
-            elif stype in kVrayColorMangementShaders and isColorChannel:
+            elif shaderType in kVrayColorMangementShaders and isColorChannel:
                 setVrayColorSpace(filenode, kVrayDegammaMethod, kVrayDegammaValue)
 
         # If auto file path is on
-        if autopath_on:
-            file_path = substituteVariables(autoPathRule, nlist, cnames[idx])
-            if ignore:
-                if os.path.isfile(file_path):
-                    mc.setAttr(filenode + '.fileTextureName', file_path, type='string')
-                else:
-                    print '{0} is not exists. skip.'.format( file_path )
+        if isAutopath:
+            fileTextureName = substituteWordFunc(autoPathRule, channel=cnames[idx])
+            if isIgnoreTextureIsNotExists and not os.path.isfile(fileTextureName):
+                print '{0} is not exists, skip.'.format(fileTextureName)
             else:
-                mc.setAttr(filenode + '.fileTextureName', file_path, type='string')
+                mc.setAttr(filenode + '.fileTextureName', fileTextureName, type='string')
 
         # If this texture is scalar
-        if aAttr == 'outAlpha' and alpha_is_lum:
-            mc.setAttr( filenode + '.alphaIsLuminance', 1 )
+        if aAttr == 'outAlpha' and isAlphaIsLum:
+            mc.setAttr(filenode + '.alphaIsLuminance', 1)
 
         # Set file's filter
-        mc.setAttr( filenode + '.filterType', filters[idx] )
+        mc.setAttr(filenode + '.filterType', filters[idx])
 
         # Here is deal with bump texture, index(9)
         if idx == 9:
-            #if stype in ['blinn', 'mia_material_x_passes', 'aiStandard']:
-            if kBumpChannel[ stype ] == 'bump2d':
+            # if shaderType in ['blinn', 'mia_material_x_passes', 'aiStandard']:
+            if kBumpChannel[shaderType] == 'bump2d':
                 bump2d = mc.shadingNode('bump2d', \
-                name=substituteVariables(bump2dRule, nlist), asUtility=True)
-                mc.connectAttr( filenode + '.' + aAttr, bump2d + '.bumpValue', f = True )
-                mc.connectAttr( bump2d + '.outNormal', sname + '.' + bAttr, f = True )
-                mc.setAttr( bump2d + '.bumpDepth', bump_value )
-            #elif stype in ['VRayMtl']:
-            elif kBumpChannel[ stype ] == 'file':
-                mc.connectAttr( filenode + '.' + aAttr, sname + '.' + bAttr, f = True )
-                if stype == 'VRayMtl':
-                    mc.setAttr( sname + '.bumpMult', bump_value )
+                name=substituteVariables(bump2dRule), asUtility=True)
+                mc.connectAttr(filenode + '.' + aAttr, bump2d + '.bumpValue', f=True)
+                mc.connectAttr(bump2d + '.outNormal', mainShader + '.' + bAttr, f=True)
+                mc.setAttr(bump2d + '.bumpDepth', bumpValue)
+            # else if shaderType in ['VRayMtl']:
+            elif kBumpChannel[shaderType] == 'file':
+                mc.connectAttr(filenode + '.' + aAttr, mainShader + '.' + bAttr, f=True)
+                if shaderType == 'VRayMtl':
+                    mc.setAttr(mainShader + '.bumpMult', bumpValue)
         else:
-            mc.connectAttr( filenode + '.' + aAttr, sname + '.' + bAttr )
+            mc.connectAttr( filenode + '.' + aAttr, mainShader + '.' + bAttr )
         newTextureList.append(filenode)
         newTextureChannels.append(cnames[idx])
 
-    # If Shared Place2dTexture is on, we create a place2dTexture node connect to each map.
     # Otherwise, We need to create place2dTexture for each map.
     uvMirror = [0, 0]
     uvMirrorMethods = ((1,0), (0,1), (1,1))
-    if mirror_tex >= 0:
-        uvMirror = uvMirrorMethods[mirror_tex]
+    if isUvMirror >= 0:
+        uvMirror = uvMirrorMethods[isUvMirror]
 
-    if sharedPlace2d and len(newTextureList) != 0:
-        p2d = buildPlace2dTexture(substituteVariables(place2dRule, nlist, 'shared'), uvMirror[0], uvMirror[1])
+    # If Shared Place2dTexture is on, we create a place2dTexture node connect to each map.
+    place2dTextureNodeName = substituteWordFunc(place2dRule)
+    if isSharedPlace2dTexture and newTextureList:
+        p2d = buildPlace2dTexture(place2dTextureNodeName, uvMirror[0], uvMirror[1])
         for f in newTextureList:
             connectPlace2dTexture(f, p2d)
-        #mc.rename(p2d, substituteVariables(place2dRule, nlist))
     else:
         for idx, f in enumerate(newTextureList):
             if place2dRule.find('<channel>') == -1:
-                p2d = buildPlace2dTexture(substituteVariables( \
-                place2dRule + '_' + chr(idx+65), nlist), uvMirror[0], uvMirror[1])
+                p2d = buildPlace2dTexture(\
+                place2dTextureNodeName + '_' + chr(idx+65), uvMirror[0], uvMirror[1])
             else:
-                p2d = buildPlace2dTexture(substituteVariables( \
-                place2dRule, nlist, newTextureChannels[idx]), uvMirror[0], uvMirror[1])
+                place2dTextureNodeName = substituteWordFunc(\
+                place2dRule, channel=newTextureChannels[idx])
+                p2d = buildPlace2dTexture(place2dTextureNodeName, uvMirror[0], uvMirror[1])
             connectPlace2dTexture(f, p2d)
 
-    if assign_selected:
-        selections = mc.ls(sl=True, type=['mesh', 'transform', 'nurbsSurface'])
-        if selections:
-            print selections
-
-    return sname, sengine
+    return mainShader, shadingGroup
 
 def setColorSpaceToLinear(filenode, version):
     if version in [ '2014' ]:

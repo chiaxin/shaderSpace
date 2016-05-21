@@ -1,15 +1,15 @@
 import maya.cmds
 
-kMayaVersion= maya.cmds.about( v = True )
-kCurrentOS  = maya.cmds.about( os = True )
+kMayaVersion= maya.cmds.about(v=True)
+kCurrentOS  = maya.cmds.about(os=True)
 kLinearProfile = 'scene-linear Rec 709/sRGB'
 
 # Vray color space - 0: linear, 1: Gamma, 2: sRGB
 kVrayDegammaMethod = 1
 kVrayDegammaValue = 2.2
 
-kVersion = '0.4.20'
-kLastUpdate = 'May, 20, 2016'
+kVersion = '0.4.30'
+kLastUpdate = 'May, 21, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
@@ -134,11 +134,11 @@ optionsDefaultMaps = { \
 'SDN' : 'shader', \
 'USR' : 'user', \
 'VER' : 'v01', \
-'OPT' : [ 1, 1, 1, 0 ], \
-'APR' : '<root>/sourceimages/<asset>/<asset><shader>_<channel>_<version>.tga', \
-'CST' : [ 'col', 'dif', 'rhs', 'rfl', 'rlc', 'rlg', 'trs', 'rfc', 'rfg', 'bmp', 'inc', 'opc' ], \
-'CCK' : [ 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0 ], \
-'CFR' : [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ], \
+'OPT' : [ 1, 0, 1, 0 ], \
+'APR' : '<root>/sourceimages/<asset>/<asset>_<shader>_<channel>_<version>.tga', \
+'CST' : ['col', 'dif', 'rhs', 'rfl', 'rlc', 'rlg', 'trs', 'rfc', 'rfg', 'bmp', 'inc', 'opc'], \
+'CCK' : [ 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0 ], \
+'CFR' : [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ], \
 'BMP' : 0.1, \
 'SNR' : '<asset>_<shader>_SD', \
 'SGN' : '<asset>_<shader>_SG', \

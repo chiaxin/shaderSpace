@@ -1,31 +1,34 @@
+# Python built-in modules
+from os import listdir
+from os.path import isdir, isfile, join
 from functools import partial
+import re
+
+# Shader Space modules
+import base
+import tools
 from config import optionsDefaultMaps, optionsVariableMaps
 from config import kShadersList, kAboutContent, kShaderPlugins, kShaderButtons
 from config import kChannelNames, kVersion, kWebsite
 from config import kChannelsPanelAnn, kAssignAnn, kGammaCorrectAnn, kAutoFileAnn, kMirrorAnn
 from core import isVaildName, substituteVariables, createShader, reconnectShader
-from os import listdir
-from os.path import isdir, isfile, join
-import re
-import string
-import base
-import tools
+
+# Maya modules
 import maya.cmds as mc
 from pymel.core import optionVar
-import pymel.core as pm
 
 # -----------------------------------------------
 # : Read all option variablies
 # -----------------------------------------------
 for key in optionsVariableMaps.keys():
     if not mc.optionVar( exists = optionsVariableMaps[key] ):
-        optionVar[ optionsVariableMaps[key] ] = optionsDefaultMaps[key]
+        optionVar[optionsVariableMaps[key]] = optionsDefaultMaps[key]
 gNameRuleMaps = {}
 for key in ('APR', 'SNR', 'SGN', 'TEX', 'B2D', 'P2D', 'MIF'):
     try: 
-        gNameRuleMaps[ key ] = mc.optionVar( q = optionsVariableMaps[ key ] ).encode( 'ascii', 'ignore' )
+        gNameRuleMaps[key] = mc.optionVar(q=optionsVariableMaps[key]).encode('ascii','ignore')
     except KeyError: 
-        gNameRuleMaps[ key ] = optionsDefaultMaps[ key ].encode( 'ascii', 'ignore' )
+        gNameRuleMaps[key] = optionsDefaultMaps[key].encode('ascii', 'ignore')
     except:
         mc.warning('OptionVar load error occurred')
         raise
@@ -51,7 +54,6 @@ try:
 except:
     gParameters['STP'] = int(optionsDefaultMaps['STP'])
 
-
 gShaderPresetDefinition = {}
 for shader in kShadersList:
     gShaderPresetDefinition[shader] = ''
@@ -70,20 +72,20 @@ def shaderSpace():
     OBLOCK= OptionsBlock()
     CBLOCK= ChannelsBlock()
     ABLOCK= ActionsBlock()
-    BLOCKS = [ NBLOCK, OBLOCK, CBLOCK, ABLOCK ]
-    WIN.build( MENU, BLOCKS, UIT, title + ' ' + version )
+    BLOCKS = [NBLOCK, OBLOCK, CBLOCK, ABLOCK ]
+    WIN.build(MENU, BLOCKS, UIT, title + ' ' + version)
     WIN.show()
 
 # -----------------------------------------------
 # : Main window define
 # -----------------------------------------------
-class MainUI( base.BaseUI ):
+class MainUI(base.BaseUI):
     Win = 'shaderSpaceMainWIN'
     Frl = 'shaderSpaceMainFRL'
     width = 345
     height= 450
 
-class MainUIT( base.BaseUIT ):
+class MainUIT(base.BaseUIT):
     Uit = 'shaderSpaceMainUIT'
 
 class MainMenu:
@@ -106,13 +108,13 @@ class MainMenu:
         mc.menuItem(l='Clean',  c=lambda *args : optionVarsCleanUp())
 
         mc.menu(l='Edit')
-        mc.menuItem(l= 'Node Name', sm=True, to=True)
-        mc.menuItem(l='Shader',         c=lambda *args : ruleSettingUI( 'SNR', 'Shader'))
-        mc.menuItem(l='Shading Group',  c=lambda *args : ruleSettingUI( 'SGN', 'Shading Group'))
-        mc.menuItem(l='Texture',        c=lambda *args : ruleSettingUI( 'TEX', 'Texture Node'))
-        mc.menuItem(l='Bump2d',         c=lambda *args : ruleSettingUI( 'B2D', 'Bump2d'))
-        mc.menuItem(l='Place2dTexture', c=lambda *args : ruleSettingUI( 'P2D', 'Place2dTexture'))
-        mc.menuItem(l='materialInfo',   c=lambda *args : ruleSettingUI( 'MIF', 'Material Info'))
+        mc.menuItem(l='Node Name', sm=True, to=True)
+        mc.menuItem(l='Shader',         c=lambda *args : ruleSettingUI('SNR', 'Shader'))
+        mc.menuItem(l='Shading Group',  c=lambda *args : ruleSettingUI('SGN', 'Shading Group'))
+        mc.menuItem(l='Texture',        c=lambda *args : ruleSettingUI('TEX', 'Texture Node'))
+        mc.menuItem(l='Bump2d',         c=lambda *args : ruleSettingUI('B2D', 'Bump2d'))
+        mc.menuItem(l='Place2dTexture', c=lambda *args : ruleSettingUI('P2D', 'Place2dTexture'))
+        mc.menuItem(l='materialInfo',   c=lambda *args : ruleSettingUI('MIF', 'Material Info'))
         mc.setParent('..', menu=True)
 
         self.Ign = mc.menuItem(self.Ign, l='Ignore auto path if not found', \
@@ -137,8 +139,8 @@ class MainMenu:
                 mc.menuItem(l='To '+shader, en=False)
 
         mc.menu(l='Help')
-        mc.menuItem(l='Help',  c=lambda *args : ssHelp())
-        mc.menuItem(l='About', c=lambda *args : ssAbout())
+        mc.menuItem(l='Help',  c=lambda *args : shaderSpaceHelp())
+        mc.menuItem(l='About', c=lambda *args : shaderSpaceAbout())
 
         mc.setParent('..')
         mc.setParent('..')
@@ -152,6 +154,9 @@ class MainMenu:
     def toggleSTP(self):
         gParameters['STP'] = int(mc.menuItem(self.Stp, q=True, cb=True))
 
+    def switchMode(self, *args):
+        mc.deleteUI(MainUI.Frl, layout=True)
+
     def reconnect(self, *args):
         selections = [ s for s in mc.ls( sl = True ) if mc.nodeType(s) in kShadersList ]
         if not selections:
@@ -164,14 +169,14 @@ class MainMenu:
             all_shaders.append(shader)
         mc.select(all_shaders, r=True )
 
-class NamingBlock( base.BaseBlock ):
+class NamingBlock(base.BaseBlock):
     Frl = 'shaderSpaceNamingFRL'
     Col = 'shaderSpaceNamingCOL'
     width = 300
     height= 135
     Label = 'Naming'
-    kTextFields = [ 'shaderSpaceAstTF', 'shaderSpaceSdnTF', \
-    'shaderSpaceUsrTF', 'shaderSpaceVerTF' ]
+    kTextFields = ['shaderSpaceAstTF', 'shaderSpaceSdnTF', \
+    'shaderSpaceUsrTF', 'shaderSpaceVerTF']
     try:
         contents = [ \
         mc.optionVar( q = optionsVariableMaps['AST'] ), \
@@ -192,28 +197,28 @@ class NamingBlock( base.BaseBlock ):
     def content(self):
         self.Col = mc.columnLayout( self.Col )
 
-        mc.rowLayout( nc = 2 )
-        mc.text( l = 'Asset' )
-        self.kTextFields[0] = mc.textField( self.kTextFields[0], \
-        tx = self.contents[0], cc = partial( self.save, 0 ) )
+        mc.rowLayout(nc=2)
+        mc.text(l='Asset')
+        self.kTextFields[0] = mc.textField(self.kTextFields[0], \
+        tx=self.contents[0], cc=partial(self.save, 0))
         mc.setParent('..')
 
-        mc.rowLayout( nc = 2 )
-        mc.text( l = 'Shader' )
-        self.kTextFields[1] = mc.textField( self.kTextFields[1], \
-        tx = self.contents[1], cc = partial( self.save, 1 ) )
+        mc.rowLayout(nc=2)
+        mc.text(l='Shader')
+        self.kTextFields[1] = mc.textField(self.kTextFields[1], \
+        tx=self.contents[1], cc=partial(self.save, 1))
         mc.setParent('..')
 
-        mc.rowLayout( nc = 2 )
-        mc.text( l = 'User' )
-        self.kTextFields[2] = mc.textField( self.kTextFields[2], \
-        tx = self.contents[2], cc = partial( self.save, 2) )
+        mc.rowLayout(nc=2)
+        mc.text(l='User')
+        self.kTextFields[2] = mc.textField(self.kTextFields[2], \
+        tx=self.contents[2], cc=partial(self.save, 2))
         mc.setParent('..')
 
-        mc.rowLayout( nc = 2 )
-        mc.text( l = 'Version' )
-        self.kTextFields[3] = mc.textField( self.kTextFields[3], \
-        tx = self.contents[3], cc = partial( self.save, 3 ) )
+        mc.rowLayout(nc=2)
+        mc.text(l='Version')
+        self.kTextFields[3] = mc.textField(self.kTextFields[3], \
+        tx=self.contents[3], cc=partial(self.save, 3))
         mc.setParent('..')
 
         mc.setParent('..')
@@ -222,13 +227,13 @@ class NamingBlock( base.BaseBlock ):
         index = args[0]
         userEnter = mc.textField( self.kTextFields[ index ], q = True, tx = True )
         if not userEnter:
-            mc.textField( self.kTextFields[ index ], e = True, tx = self.contents[ index ] )
+            mc.textField(self.kTextFields[index], e=True, tx=self.contents[index])
             return
         elif not isVaildName( userEnter ):
             mc.warning('Invaild Name :' + userEnter)
-            mc.textField( self.kTextFields[ index ], e = True, tx = self.contents[ index ] )
+            mc.textField(self.kTextFields[index], e=True, tx=self.contents[index])
         else:
-            self.contents[ index ] = userEnter
+            self.contents[index] = userEnter
 
 class OptionsBlock( base.BaseBlock ):
     Frl = 'shaderSpaceOptionsFRL'
@@ -437,7 +442,7 @@ class ChannelsBlock( base.BaseBlock ):
         gParameters['BMP'] = self.kBUMP_VALUES[ args[0] ]
         print 'Bump value has been changed : {0}'.format( self.kBUMP_VALUES[args[0]] )
 
-class ActionsBlock( base.BaseBlock ):
+class ActionsBlock(base.BaseBlock):
     Frl = 'shaderSpaceActionsFRL'
     Col = 'shaderSpaceActionsCOL'
     Tab = 'shaderSpaceActionsTAB'
@@ -454,7 +459,7 @@ class ActionsBlock( base.BaseBlock ):
         for sd in kShaderButtons.keys():
             shaderButton = mc.button( l = kShaderButtons[sd], bgc = self.presetUnsetColor, \
             en = mc.pluginInfo( kShaderPlugins[sd], q = True, l = True ) \
-            or kShaderPlugins[sd] == 'none', c = partial( self.doIt, sd ) )
+            or kShaderPlugins[sd] == 'none', c = partial(self.doIt, shaderType=sd))
             presets = self.getPresets(sd)
             if presets:
                 mc.popupMenu( parent = shaderButton )
@@ -474,61 +479,63 @@ class ActionsBlock( base.BaseBlock ):
         return presets
 
     def setPreset(self, *args):
-        gShaderPresetDefinition[ args[0] ] = args[1]
+        gShaderPresetDefinition[args[0]] = args[1]
         print '# {0} preset has been set : {1}'.format( args[0], args[1] )
         mc.button( args[2], e = True, bgc = self.presetSetColor, l = kShaderButtons[args[0]] + ' ~' + args[1] )
 
     def unsetPreset(self, *args):
-        gShaderPresetDefinition[ args[0] ] = ''
+        gShaderPresetDefinition[args[0]] = ''
         print '# {0} preset has been set default'.format( args[0] )
         mc.button( args[1], e = True, bgc = self.presetUnsetColor, l = kShaderButtons[args[0]] )
 
-    def doIt(self, *args):
-        stype = args[0] # material type
-        channels_name = ChannelsBlock.shorts # str in List
-        nlist = NamingBlock.contents  # str in List
-        channels_check= ChannelsBlock.checks # int in List
-        channels_filter = ChannelsBlock.filters # int in List
-        preset = gShaderPresetDefinition[stype]
+    def doIt(self, *args, **kwargs):
+        def confirm(stype):
+            preset = gShaderPresetDefinition[stype]
+            if preset: message = 'Create {0} ~ {1}?'.format(stype, preset)
+            else: message = 'Create {0}?'.format(stype)
+            if mc.confirmDialog(t='Shader Create', m=message, \
+            button=['Yes','No'], db='Yes', cb='No', ds='No') == 'No':
+                return False
+            return True
+        try:
+            selections = mc.ls(sl=True)
+            stype = kwargs['shaderType']
+            uvMirror = -1
+            if OptionsBlock.checks[3]:
+                uvMirror = gParameters['MIR']
+            if not confirm(stype): return
+            sd, sg = createShader( \
+            shaderType=stype, \
+            preset=gShaderPresetDefinition[stype], \
+            channelNames=ChannelsBlock.shorts, \
+            checks=ChannelsBlock.checks, \
+            filters=ChannelsBlock.filters, \
+            autopathRule=gNameRuleMaps['APR'], \
+            shaderRule=gNameRuleMaps['SNR'], \
+            shadingGroupRule=gNameRuleMaps['SGN'], \
+            textureRule=gNameRuleMaps['TEX'], \
+            bump2dRule=gNameRuleMaps['B2D'], \
+            place2dTextureRule=gNameRuleMaps['P2D'], \
+            materialInfoRule=gNameRuleMaps['MIF'], \
+            isGammaCorrect=OptionsBlock.checks[1], \
+            isAutopath=OptionsBlock.checks[2], \
+            isUvMirror=uvMirror,\
+            bumpValue=gParameters['BMP'],\
+            igroneTexIsNotExists=gParameters['IGN'],\
+            isAlphaIsLum=gParameters['AIL'],\
+            isSharedP2d=gParameters['STP'] )
+        except:
+            mc.warning('Error occurred in shader create.')
+            raise
 
-        options = []
-        options.append(OptionsBlock.checks[0])
-        options.append(OptionsBlock.checks[1])
-        options.append(OptionsBlock.checks[2])
-        if OptionsBlock.checks[3] == False:
-            options.append( -1 )
-        else:
-            options.append(gParameters['MIR'])
-        options.append(gParameters['BMP'])
-        options.append(gParameters['IGN'])
-        options.append(gParameters['AIL'])
-        options.append(gParameters['STP'])
-
-        rules = gNameRuleMaps # Name rules in Dict 
-
-        message = ''
-        if preset:
-            message = 'Create {0} ~ {1}?'.format(stype, preset)
-        else:
-            message = 'Create {0}?'.format(stype)
-        ans = mc.confirmDialog( t = 'Shader Create', m = message, \
-        button=['Yes','No'], db = 'Yes', cb = 'No', ds = 'No' )
-        if ans == 'No': return
-
-        selections = mc.ls( sl = True )
-
-        sd, sg = createShader( nlist, stype, channels_name, \
-        channels_check, options, channels_filter, rules, preset)
         if not sd:
             print '# Create shader process canceled'
             return
 
         print 'New shader has been created : {0}, {1}'.format(sd, sg)
 
-        if selections:
-            mc.select(selections, r=True)
-        if options[0] and selections:
-            mc.sets(fe=sg)
+        if selections: mc.select(selections, r=True)
+        if OptionsBlock.checks[0] and selections: mc.sets(fe=sg)
 
         optionVarsUpdate()
 # -----------------------------------------------
@@ -538,13 +545,13 @@ class ActionsBlock( base.BaseBlock ):
 # -----------------------------------------------
 # : Rule setting window define
 # -----------------------------------------------
-class SubRuleUI( base.BaseUI ):
+class SubRuleUI(base.BaseUI):
     Win = 'shaderSpaceRuleWIN'
     Frl = 'sahderSpaceRuleFRL'
     width = 420
     height= 200
 
-class SubRuleBlock( base.BaseBlock ):
+class SubRuleBlock(base.BaseBlock):
     Frl = 'shaderSpaceRuleBlockFRL'
     Col = 'shaderSpaceRuleBlockCol'
     ruleField   = 'shaderSpacePathRuleTF'
@@ -556,16 +563,15 @@ class SubRuleBlock( base.BaseBlock ):
         self.ruletype = ruletype
 
     def content(self):
-        self.Col = mc.columnLayout( self.Col )
+        self.Col = mc.columnLayout(self.Col)
 
-        self.ruleField = mc.textField( self.ruleField, tx = gNameRuleMaps[self.ruletype] )
-        self.previewField = mc.text( self.previewField, l = 'preview' )
+        self.ruleField = mc.textField(self.ruleField, tx=gNameRuleMaps[self.ruletype])
+        self.previewField = mc.text(self.previewField, l='preview')
         mc.rowLayout(nc=3)
-        mc.button( l = 'OK',        c = lambda *args : self.save()      )
-        mc.button( l = 'Preview',   c = lambda *args : self.preview()   )
-        mc.button( l = 'Cancel',    c = lambda *args : self.close()     )
+        mc.button(l='OK', c=lambda *args : self.save())
+        mc.button(l='Preview', c=lambda *args : self.preview())
+        mc.button(l='Cancel', c=lambda *args : self.close())
         mc.setParent('..')
-
         mc.setParent('..')
 
     def save(self, *args):
@@ -577,40 +583,49 @@ class SubRuleBlock( base.BaseBlock ):
             mc.warning('Failed to save path')
             return
         gNameRuleMaps[self.ruletype] = message
-        optionVar[ optionsVariableMaps[self.ruletype] ] = gNameRuleMaps[self.ruletype]
+        optionVar[optionsVariableMaps[self.ruletype]] = gNameRuleMaps[self.ruletype]
         print 'The rule has been stored : ' + message
         self.close()
 
     def close(self, *args):
-        win = ( self.Col ).split('|')[0]
-        if mc.window( win, q = True, ex = True ):
-            mc.deleteUI( win )
+        win = (self.Col).split('|')[0]
+        if mc.window(win, q=True, ex=True):
+            mc.deleteUI(win)
 
     def isVaild(self, *args):
-        user_input = mc.textField(self.ruleField, q=True, tx=True)
-        if len(user_input) == 0:
+        userinput = mc.textField(self.ruleField, q=True, tx=True)
+        if len(userinput) == 0:
             mc.textField(self.ruleField, e=True, tx=gNameRuleMaps[self.ruletype])
             return False, 'Path can not be empty!'
-        elif user_input.find('<channel>') != -1 and self.ruletype not in ['APR', 'TEX', 'P2D']:
-            return False, '<channel> is for texture node or path only!'
-        instead_path = substituteVariables(user_input, ['_', '_', '_', '_'], 'channel')
-        if not isVaildName( instead_path ) and self.ruletype != 'APR':
-            return False, 'Invaild : ' + user_input
-        return True, user_input
+        elif userinput.find('<channel>') != -1 and self.ruletype not in ('APR', 'TEX', 'P2D'):
+            return False, '<channel> is for texture, place2dTexture node or texture path only!'
+        insteadPath = substituteVariables(userinput, asset=NamingBlock.contents[0], \
+        shader=NamingBlock.contents[1], user=NamingBlock.contents[2], \
+        version=NamingBlock.contents[3], channel='CHANNEL')
+        if not isVaildName(insteadPath) and self.ruletype != 'APR':
+            return False, 'Invaild : ' + userinput
+        return True, userinput
 
     def preview(self, *args):
         vaild, message = self.isVaild()
         if not vaild:
-            mc.text( self.previewField, e = True, l = message, bgc = (0.38, 0.05, 0.05) )
+            mc.text(self.previewField, e=True, l=message, bgc=(0.38, 0.05, 0.05))
         else:
-            mc.text( self.previewField, e = True, l = self.sub(), bgc = (0.05, 0.38, 0.05) )
+            mc.text(self.previewField, e=True, l=self.sub(), bgc=(0.05, 0.38, 0.05))
 
     def sub(self):
-        rule = mc.textField( self.ruleField, q = True, tx = True )
-        name_list = NamingBlock.contents
-        if rule and name_list:
-            return substituteVariables(rule, name_list, '[channel]')
-        return ''
+        rule = mc.textField(self.ruleField, q=True, tx=True)
+        asset = NamingBlock.contents[0]
+        shader = NamingBlock.contents[1]
+        user = NamingBlock.contents[2]
+        version =NamingBlock.contents[3]
+        channelStringReplace = '[channel]'
+        if not rule:
+            return ''
+        if self.ruletype in ['P2D'] and gParameters['STP']:
+            channelStringReplace = 'shared'
+        return substituteVariables(rule, asset=asset, shader=shader, \
+        user=user, version=version, channel=channelStringReplace)
 
 class SubRuleMenu:
     def __init__(self, ruletype):
@@ -620,8 +635,7 @@ class SubRuleMenu:
         mc.menuBarLayout()
         mc.menu( l = 'Edit' )
         mc.menuItem( l = 'Restore', \
-        c = lambda *args : mc.textField( SubRuleBlock.ruleField, e = True, \
-        tx = optionsDefaultMaps[self.ruletype] ) )
+        c=lambda *args : mc.textField(SubRuleBlock.ruleField, e=True, tx=optionsDefaultMaps[self.ruletype]))
         mc.setParent('..')
 
 class IntroBlock( base.BaseBlock ):
@@ -632,30 +646,30 @@ class IntroBlock( base.BaseBlock ):
 
     def content(self):
         self.Col = mc.columnLayout( self.Col )
-        mc.text( l = r'All Variabies :' )
-        mc.text( l = r'<root> : Project path' )
-        mc.text( l = r'<asset> : Asset Name' )
-        mc.text( l = r'<shader> : Shader Name' )
-        mc.text( l = r'<user> : User Name' )
-        mc.text( l = r'<version> : Version' )
-        mc.text( l = r'<c> : Camel-Case determine' )
-        mc.text( l = r'<channel> : Channel abbreviation instead (texture only)' )
+        mc.text(l=r'All Variabies :')
+        mc.text(l=r'<root> : Project path')
+        mc.text(l=r'<asset> : Asset Name')
+        mc.text(l=r'<shader> : Shader Name')
+        mc.text(l=r'<user> : User Name')
+        mc.text(l=r'<version> : Version')
+        mc.text(l=r'<c> : Camel-Case determine')
+        mc.text(l=r'<channel> : Channel abbreviation instead')
         mc.setParent('..')
 
 class SubWinUIT( base.BaseUIT ):
     Uit = 'shaderSpaceRuleUIT'
     def templates(self):
-        mc.textField( dt = self.Uit, w = 300, h = 30 )
-        mc.button( dt = self.Uit, w = 128, h = 32 )
-        mc.text( dt = self.Uit, w = 100, font = 'fixedWidthFont', al = 'left' )
-        mc.frameLayout( dt = self.Uit, lv = False, cl = False, cll = False, mh = 5, mw = 5 )
-        mc.columnLayout( dt = self.Uit, adj = True , rs = 5, cal = 'center' )
+        mc.textField(dt=self.Uit, w=300, h=30)
+        mc.button(dt=self.Uit, w=128, h=32)
+        mc.text(dt=self.Uit, w=100, font='fixedWidthFont', al='left')
+        mc.frameLayout(dt=self.Uit, lv=False, cl=False, cll=False, mh=5, mw=5)
+        mc.columnLayout(dt=self.Uit, adj=True , rs=5, cal='center')
 
 def ruleSettingUI(ruletype, title):
     ruleWin = SubRuleUI()
-    blocks = [ SubRuleBlock(ruletype), IntroBlock() ]
+    blocks = [SubRuleBlock(ruletype), IntroBlock()]
     menu = SubRuleMenu(ruletype)
-    ruleWin.build( menu, blocks, SubWinUIT(), title )
+    ruleWin.build(menu, blocks, SubWinUIT(), title)
     ruleWin.show()
 # -----------------------------------------------
 # : Rule setting window end
@@ -677,16 +691,16 @@ class ToolsBlcok( base.BaseBlock ):
     height= 180
 
     def browse(self):
-        user_input = mc.textFieldButtonGrp( self.pathFieldTFB, q = True , tx = True )
-        directory = mc.fileDialog2( fileMode = 3, caption = 'Save directory choice', dir = user_input )
+        user_input = mc.textFieldButtonGrp(self.pathFieldTFB, q=Tru , tx=True)
+        directory = mc.fileDialog2(fileMode=3, caption='Save directory choice', dir=user_input)
         if directory:
-            mc.textFieldButtonGrp( self.pathFieldTFB, e = True, tx = directory[0] )
+            mc.textFieldButtonGrp(self.pathFieldTFB, e=True, tx=directory[0])
 
 class ToolsMenu:
     def build(self):
         mc.menuBarLayout()
-        mc.menu( l = 'Help' )
-        mc.menuItem( l = 'How to use', c = lambda *args : self.help() )
+        mc.menu(l='Help')
+        mc.menuItem(l='How to use', c=lambda *args : self.help())
         mc.setParent('..')
 
     def help(self):
@@ -694,7 +708,7 @@ class ToolsMenu:
 
 class ExportShaderBlock( ToolsBlcok ):
     modeRBG = 'shaderSpaceExportShaderModeRBG'
-    exportShaderPath = mc.workspace( q = True, rd = True )
+    exportShaderPath = mc.workspace(q=True, rd=True)
     def content(self):
         self.pathFieldTFB = mc.textFieldButtonGrp( self.pathFieldTFB, l = 'Output Path', \
         tx = self.exportShaderPath, bl = '...', cw3 = ( 80, 260, 45 ), bc = lambda *args : self.browse() )
@@ -895,13 +909,13 @@ class AboutBlock( base.BaseBlock ):
         if mc.window( AboutUI.Win, q = True, exists = True ):
             mc.deleteUI( AboutUI.Win )
 
-def ssAbout(*args):
+def shaderSpaceAbout(*args):
     aboutWin = AboutUI()
     blocks = [ AboutBlock() ]
     aboutWin.build( None, blocks, SubWinUIT(), 'Shader Space')
     aboutWin.show()
 
-def ssHelp(*args):
+def shaderSpaceHelp(*args):
     pass
 
 # -----------------------------------------------
@@ -923,23 +937,23 @@ def exportSetting():
             f.write( 'filter ' + channel + '=' + \
             ChannelsBlock.kFILTERS[ ChannelsBlock.filters[idx] ] + '\n' )
 
-        f.write( 'set Shader='          + gNameRuleMaps['SNR'] + '\n')
-        f.write( 'set ShadingEngine='   + gNameRuleMaps['SGN'] + '\n')
-        f.write( 'set Texture='         + gNameRuleMaps['TEX'] + '\n')
-        f.write( 'set Bump2d='          + gNameRuleMaps['B2D'] + '\n')
-        f.write( 'set Place2dTexture='  + gNameRuleMaps['P2D'] + '\n')
-        f.write( 'set MaterialInfo='    + gNameRuleMaps['MIF'] + '\n')
+        f.write('set Shader='          + gNameRuleMaps['SNR'] + '\n')
+        f.write('set ShadingEngine='   + gNameRuleMaps['SGN'] + '\n')
+        f.write('set Texture='         + gNameRuleMaps['TEX'] + '\n')
+        f.write('set Bump2d='          + gNameRuleMaps['B2D'] + '\n')
+        f.write('set Place2dTexture='  + gNameRuleMaps['P2D'] + '\n')
+        f.write('set MaterialInfo='    + gNameRuleMaps['MIF'] + '\n')
     except:
         raise
-    print('Shader space option has been saved : {0}'.format( config_files[0] ) )
+    print('Shader space option has been saved : {0}'.format(config_files[0]))
     f.close()
 
 def loadSetting():
     def analysisLet(para, value):
-        for idx, channel in enumerate( kChannelNames ):
+        for idx, channel in enumerate(kChannelNames):
             if para == channel:
-                if not isVaildName( value ):
-                    print 'The {0} is invaild name, skip'.format( value )
+                if not isVaildName(value):
+                    print 'The {0} is invaild name, skip'.format(value)
                     return
                 elif ChannelsBlock.shorts[idx] == value:
                     return
@@ -977,11 +991,11 @@ def loadSetting():
         elif para == 'place2dTexture':  key = 'P2D'
         elif para == 'MaterialInfo':    key = 'MIF'
         else: return
-        instead_path = substituteVariables( value, ['_', '_', '_', '_'], 'channel' )
-        if isVaildName( instead_path ):
-            gNameRuleMaps[ key ] = value
+        instead_path = substituteVariables(value)
+        if isVaildName(instead_path):
+            gNameRuleMaps[key] = value
         else:
-            print '[error] This is invaild rule : {0}, skip'.format( value )
+            print '[error] This is invaild rule : {0}, skip'.format(value)
 
     ssoFilter = 'Shader Space Options (*.sso)'
     config_files = mc.fileDialog2( ff = ssoFilter, ds = 2, cap = 'Load configuration', \
