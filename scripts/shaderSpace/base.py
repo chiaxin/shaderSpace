@@ -1,3 +1,10 @@
+'''
+    Base UI Class for shaderSpace Rapid Shader Workflow Tool in Maya
+
+    Made by Chia Xin Lin, Copyright (c) 2016 by Chia Xin Lin
+    E-Mail : nnnight@gmail.com
+    Github : http://github.com/chiaxin
+'''
 import maya.cmds as mc
 
 class BaseUI:
@@ -6,23 +13,18 @@ class BaseUI:
     width = 240
     height= 360
 
-    def build(self, menu, blocks , uit, title):
+    def build(self, menu, blocks, uit, title):
         self.destroy()
         mc.window(self.Win, w=self.width, h=self.height, t=title)
         if uit is not None:
             uit.build()
             uit.push()
-
         if menu is not None: menu.build()
-
         self.Frl = mc.frameLayout(self.Frl)
-
         if blocks is not None and len(blocks):
             for block in blocks:
                 block.build()
-
         mc.setParent('..')
-
         if uit is not None: uit.pop()
 
     def destroy(self):

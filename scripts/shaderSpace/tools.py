@@ -1,7 +1,15 @@
+'''
+    Additional Tools for shaderSpace Rapid Shader Workflow Tool in Maya
+
+    Made by Chia Xin Lin, Copyright (c) 2016 by Chia Xin Lin
+    E-Mail : nnnight@gmail.com
+    Github : http://github.com/chiaxin
+'''
 from os import listdir
 from os.path import isfile, join
 from os.path import exists, join
 from os.path import dirname, join
+
 import maya.cmds as mc
 import maya.mel as mel
 

@@ -1,3 +1,10 @@
+'''
+    Configurations for shaderSpace Rapid Shader Workflow Tool in Maya
+
+    Made by Chia Xin Lin, Copyright (c) 2016 by Chia Xin Lin
+    E-Mail : nnnight@gmail.com
+    Github : http://github.com/chiaxin
+'''
 import maya.cmds
 
 kMayaVersion= maya.cmds.about(v=True)
@@ -8,7 +15,7 @@ kLinearProfile = 'scene-linear Rec 709/sRGB'
 kVrayDegammaMethod = 1
 kVrayDegammaValue = 2.2
 
-kVersion = '0.4.31'
+kVersion = '0.4.32'
 kLastUpdate = 'May, 22, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'

@@ -1,14 +1,23 @@
+'''
+    Core Functions for shaderSpace Rapid Shader Workflow Tool in Maya
+
+    Made by Chia Xin Lin, Copyright (c) 2016 by Chia Xin Lin
+    E-Mail : nnnight@gmail.com
+    Github : http://github.com/chiaxin
+'''
 import sys
 import os.path
 import string
 from functools import partial
-import maya.cmds as mc
-import maya.mel as mel
+
 from config import kShadersList, kRelatives, kDegammaValue, kConnectSG
 from config import kBumpChannel, kShaderPlugins
 from config import kMayaVersion, kCurrentOS
 from config import kColorManagementShaders, kLinearProfile, kVrayColorMangementShaders
 from config import kVrayDegammaMethod, kVrayDegammaValue
+
+import maya.cmds as mc
+import maya.mel as mel
 
 def isVaildName(name):
     if not name:
@@ -36,6 +45,7 @@ def substituteVariables(rule, **kwargs):
     rule = rule.replace('<user>',   kwargs.get('user', 'user'))
     rule = rule.replace('<version>',kwargs.get('version', 'version'))
     rule = rule.replace('<root>',  mc.workspace(q=True, rootDirectory=True))
+    print rule
     # If channel is filled, replace it
     if kwargs.has_key('channel'):
         rule = rule.replace('<channel>', kwargs.get('channel', ''))
@@ -100,8 +110,8 @@ def createShader(*args, **kwargs):
         mc.warning('Failed to get options in create shader function')
         raise
     substituteWordFunc = partial(substituteVariables, \
-    asset=kwargs.get('asset', 'asset'), user=kwargs.get('shader', 'shader'), \
-    shader=kwargs.get('user', 'user'), version=kwargs.get('version', 'version'))
+    asset=kwargs.get('asset', 'asset'), user=kwargs.get('user', 'user'), \
+    shader=kwargs.get('shader', 'shader'), version=kwargs.get('version', 'version'))
     if not isExistsNodeType(shaderType):
         mc.error('Unknown type : {0}'.format(shaderType))
         return

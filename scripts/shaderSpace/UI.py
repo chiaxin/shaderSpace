@@ -1,3 +1,10 @@
+'''
+    Main User-Interface for shaderSpace Rapid Shader Workflow Tool in Maya
+
+    Made by Chia Xin Lin, Copyright (c) 2016 by Chia Xin Lin
+    E-Mail : nnnight@gmail.com
+    Github : http://github.com/chiaxin
+'''
 # Python built-in modules
 from os import listdir
 from os.path import isdir, isfile, join
@@ -277,7 +284,7 @@ class OptionsBlock( base.BaseBlock ):
         ui = SubRuleUI()
         uit = SubWinUIT()
         menu= SubRuleMenu('APR')
-        blocks = [SubRuleBlock('APR'), IntroBlock()]
+        blocks = [SubRuleBlock('APR'), IntroBlock('APR')]
         ui.build(menu, blocks, uit, 'Auto Texture File Rule Setting')
         ui.show()
 
@@ -504,6 +511,10 @@ class ActionsBlock(base.BaseBlock):
                 uvMirror = gParameters['MIR']
             if not confirm(stype): return
             sd, sg = createShader( \
+            asset=NamingBlock.contents[0], \
+            shader=NamingBlock.contents[1], \
+            user=NamingBlock.contents[2], \
+            version=NamingBlock.contents[3], \
             shaderType=stype, \
             preset=gShaderPresetDefinition[stype], \
             channelNames=ChannelsBlock.shorts, \
