@@ -18,10 +18,10 @@ import maya.cmds as mc
 from pymel.core import optionVar
 
 # -----------------------------------------------
-# : Read all option variablies
+# : Read all option variables
 # -----------------------------------------------
 for key in optionsVariableMaps.keys():
-    if not mc.optionVar( exists = optionsVariableMaps[key] ):
+    if not mc.optionVar(exists=optionsVariableMaps[key]):
         optionVar[optionsVariableMaps[key]] = optionsDefaultMaps[key]
 gNameRuleMaps = {}
 for key in ('APR', 'SNR', 'SGN', 'TEX', 'B2D', 'P2D', 'MIF'):
@@ -59,7 +59,7 @@ for shader in kShadersList:
     gShaderPresetDefinition[shader] = ''
 
 # -----------------------------------------------
-# : Read option variablies end
+# : Read option variables end
 # -----------------------------------------------
 
 def shaderSpace():
@@ -134,9 +134,9 @@ class MainMenu:
         for shader in kShadersList:
             if mc.pluginInfo(kShaderPlugins[shader], q=True, loaded=True) or \
             kShaderPlugins[shader] == 'none':
-                mc.menuItem(l='To '+shader, c=partial(self.reconnect, shader))
+                mc.menuItem(l='To ' + shader, c=partial(self.reconnect, shader))
             else:
-                mc.menuItem(l='To '+shader, en=False)
+                mc.menuItem(l='To ' + shader, en=False)
 
         mc.menu(l='Help')
         mc.menuItem(l='Help',  c=lambda *args : shaderSpaceHelp())
@@ -158,7 +158,7 @@ class MainMenu:
         mc.deleteUI(MainUI.Frl, layout=True)
 
     def reconnect(self, *args):
-        selections = [ s for s in mc.ls( sl = True ) if mc.nodeType(s) in kShadersList ]
+        selections = [s for s in mc.ls(sl=True) if mc.nodeType(s) in kShadersList]
         if not selections:
             mc.warning('Please select one or more shaders')
             return
@@ -167,7 +167,7 @@ class MainMenu:
             shader, shadingGroup = reconnectShader(selected, args[0])
             print '{0} rebuild : {1} ( {2} )'.format(selected, (shader + ', ' + shadingGroup), args[0])
             all_shaders.append(shader)
-        mc.select(all_shaders, r=True )
+        mc.select(all_shaders, r=True)
 
 class NamingBlock(base.BaseBlock):
     Frl = 'shaderSpaceNamingFRL'
@@ -179,23 +179,23 @@ class NamingBlock(base.BaseBlock):
     'shaderSpaceUsrTF', 'shaderSpaceVerTF']
     try:
         contents = [ \
-        mc.optionVar( q = optionsVariableMaps['AST'] ), \
-        mc.optionVar( q = optionsVariableMaps['SDN'] ), \
-        mc.optionVar( q = optionsVariableMaps['USR'] ), \
-        mc.optionVar( q = optionsVariableMaps['VER'] ) ]
+        mc.optionVar(q=optionsVariableMaps['AST']), \
+        mc.optionVar(q=optionsVariableMaps['SDN']), \
+        mc.optionVar(q=optionsVariableMaps['USR']), \
+        mc.optionVar(q=optionsVariableMaps['VER'])]
     except:
         mc.warning('shaderSpace optionVar capture failed in Naming')
         contents = [ \
         optionsDefaultMaps['AST'] , \
         optionsDefaultMaps['SDN'] , \
         optionsDefaultMaps['USR'] , \
-        optionsDefaultMaps['VER']  ]
+        optionsDefaultMaps['VER']]
         for key in ('AST', 'SDN' 'USR', 'VER'):
-            mc.optionVar( remove = optionsVariableMaps[key] )
-            optionVar[ optionsVariableMaps[key] ] = optionsDefaultMaps.get(key, 'undefined')
+            mc.optionVar(remove=optionsVariableMaps[key])
+            optionVar[optionsVariableMaps[key]] = optionsDefaultMaps.get(key, 'undefined')
 
     def content(self):
-        self.Col = mc.columnLayout( self.Col )
+        self.Col = mc.columnLayout(self.Col)
 
         mc.rowLayout(nc=2)
         mc.text(l='Asset')
@@ -225,7 +225,7 @@ class NamingBlock(base.BaseBlock):
 
     def save(self, *args):
         index = args[0]
-        userEnter = mc.textField( self.kTextFields[ index ], q = True, tx = True )
+        userEnter = mc.textField(self.kTextFields[index], q=True, tx=True)
         if not userEnter:
             mc.textField(self.kTextFields[index], e=True, tx=self.contents[index])
             return
@@ -238,52 +238,51 @@ class NamingBlock(base.BaseBlock):
 class OptionsBlock( base.BaseBlock ):
     Frl = 'shaderSpaceOptionsFRL'
     Col = 'shaderSpaceOptionsCOL'
+    Label = 'Options'
     width = 300
     height= 36
-    Label = 'Options'
     kCheckBoxs = [ 'shaderSpaceAssignCB', 'shaderSpaceGammaCB', \
     'shaderSpaceAutoCB', 'shaderSpaceMirrorCB' ]
 
-    checks = mc.optionVar( q = optionsVariableMaps['OPT'] )
+    checks = mc.optionVar(q=optionsVariableMaps['OPT'])
 
     if type(checks) not in [list, tuple] or len(checks) != 4:
         mc.warning('shaderSpace optionVar capture failed of Options')
         checks = optionsDefaultMaps.get('OPT', (0, 0, 0, 0))
 
     def content(self):
-        self.Col = mc.columnLayout( self.Col )
-        mc.rowLayout( nc = 4 )
-        self.kCheckBoxs[0] = mc.checkBox(self.kCheckBoxs[0], l = 'Assign', \
-        v = self.checks[0], cc = partial(self.toggle, 0), ann = kAssignAnn )
-        self.kCheckBoxs[1] = mc.checkBox(self.kCheckBoxs[1], l = 'Gamma Correct', \
-        v = self.checks[1], cc = partial(self.toggle, 1), ann = kGammaCorrectAnn )
-        self.kCheckBoxs[2] = mc.checkBox(self.kCheckBoxs[2], l = 'Auto File', \
-        v = self.checks[2], cc = partial(self.toggle, 2), ann = kAutoFileAnn )
-        self.kCheckBoxs[3] = mc.checkBox(self.kCheckBoxs[3], l = 'Mirror', \
-        v = self.checks[3], cc = partial(self.toggle, 3), ann = kMirrorAnn )
+        self.Col = mc.columnLayout(self.Col)
+        mc.rowLayout(nc=4)
+        self.kCheckBoxs[0] = mc.checkBox(self.kCheckBoxs[0], l='Assign', \
+        v=self.checks[0], cc=partial(self.toggle, 0), ann=kAssignAnn)
+        self.kCheckBoxs[1] = mc.checkBox(self.kCheckBoxs[1], l='Gamma Correct', \
+        v=self.checks[1], cc=partial(self.toggle, 1), ann=kGammaCorrectAnn)
+        self.kCheckBoxs[2] = mc.checkBox(self.kCheckBoxs[2], l='Auto File', \
+        v=self.checks[2], cc=partial(self.toggle, 2), ann=kAutoFileAnn)
+        self.kCheckBoxs[3] = mc.checkBox(self.kCheckBoxs[3], l='Mirror', \
+        v=self.checks[3], cc=partial(self.toggle, 3), ann=kMirrorAnn)
+        mc.setParent('..')
         mc.setParent('..')
 
-        mc.setParent('..')
+        mc.popupMenu(parent=self.kCheckBoxs[2])
+        mc.menuItem(l='Path Rule', c=partial(self.popAutoPathUI))
 
-        mc.popupMenu( parent = self.kCheckBoxs[2] )
-        mc.menuItem( l = 'Path Rule', c = partial( self.popAutoPathUI ) )
-
-        mc.popupMenu( parent = self.kCheckBoxs[3] )
+        mc.popupMenu(parent = self.kCheckBoxs[3])
         mc.radioMenuItemCollection()
-        mc.menuItem( l = 'Mirror U' , rb = True,  c = partial(self.mirrorSwitch, 0) )
-        mc.menuItem( l = 'Mirror V' , rb = False, c = partial(self.mirrorSwitch, 1) )
-        mc.menuItem( l = 'Both'     , rb = False, c = partial(self.mirrorSwitch, 2) )
+        mc.menuItem(l='Mirror U' , rb=True,  c=partial(self.mirrorSwitch, 0))
+        mc.menuItem(l='Mirror V' , rb=False, c=partial(self.mirrorSwitch, 1))
+        mc.menuItem(l='Both'     , rb=False, c=partial(self.mirrorSwitch, 2))
 
     def popAutoPathUI(self, *args):
         ui = SubRuleUI()
         uit = SubWinUIT()
         menu= SubRuleMenu('APR')
-        blocks = [ SubRuleBlock('APR'), IntroBlock() ]
-        ui.build( menu, blocks, uit, 'Auto Texture File Rule Setting')
+        blocks = [SubRuleBlock('APR'), IntroBlock()]
+        ui.build(menu, blocks, uit, 'Auto Texture File Rule Setting')
         ui.show()
 
     def toggle(self, *args):
-        self.checks[ args[0] ] = int( mc.checkBox( self.kCheckBoxs[ args[0] ], q = True, v = True ) )
+        self.checks[args[0]] = int(mc.checkBox(self.kCheckBoxs[args[0]], q=True, v=True))
 
     def mirrorSwitch(self, *args):
         gParameters['MIR'] = args[0]
@@ -308,113 +307,113 @@ class ChannelsBlock( base.BaseBlock ):
     'ssBmpMU', 'ssIncCB', 'ssOpaCB' ]
 
     fMenus = [ \
-    [ 'ssColOffMI', 'ssColMipMI', 'ssColBoxMI' \
-    , 'ssColQudMI', 'ssColQurMI', 'ssColGusMI' ], \
-    [ 'ssDifOffMI', 'ssDifMipMI', 'ssDifBoxMI' \
-    , 'ssDifQudMI', 'ssDifQurMI', 'ssDifGusMI' ], \
-    [ 'ssRouOffMI', 'ssRouMipMI', 'ssRouBoxMI' \
-    , 'ssRouQudMI', 'ssRouQurMI', 'ssRouGusMI' ], \
-    [ 'ssRelOffMI', 'ssRelMipMI', 'ssRelBoxMI' \
-    , 'ssRelQudMI', 'ssRelQurMI', 'ssRelGusMI' ], \
-    [ 'ssRlcOffMI', 'ssRlcMipMI', 'ssRlcBoxMI' \
-    , 'ssRlcQudMI', 'ssRlcQurMI', 'ssRlcGusMI' ], \
-    [ 'ssGlsOffMI', 'ssGlsMipMI', 'ssGlsBoxMI' \
-    , 'ssGlsQudMI', 'ssGlsQurMI', 'ssGlsGusMI' ], \
-    [ 'ssTrsOffMI', 'ssTrsMipMI', 'ssTrsBoxMI' \
-    , 'ssTrsQudMI', 'ssTrsQurMI', 'ssTrsGusMI' ], \
-    [ 'ssRfcOffMI', 'ssRfcMipMI', 'ssRfcBoxMI' \
-    , 'ssRfcQudMI', 'ssRfcQurMI', 'ssRfcGusMI' ], \
-    [ 'ssRfgOffMI', 'ssRfgMipMI', 'ssRfgBoxMI' \
-    , 'ssRfgQudMI', 'ssRfgQurMI', 'ssRfgGusMI' ], \
-    [ 'ssBmpOffMI', 'ssBmpMipMI', 'ssBmpBoxMI' \
-    , 'ssBmpQudMI', 'ssBmpQurMI', 'ssBmpGusMI' ], \
-    [ 'ssIncOffMI', 'ssIncMipMI', 'ssIncBoxMI' \
-    , 'ssIncQudMI', 'ssIncQurMI', 'ssIncGusMI' ], \
-    [ 'ssOpaOffMI', 'ssOpaMipMI', 'ssOpaBoxMI' \
-    , 'ssOpaQudMI', 'ssOpaQurMI', 'ssOpaGusMI' ] ]
+    ['ssColOffMI', 'ssColMipMI', 'ssColBoxMI'\
+    ,'ssColQudMI', 'ssColQurMI', 'ssColGusMI'], \
+    ['ssDifOffMI', 'ssDifMipMI', 'ssDifBoxMI'\
+    ,'ssDifQudMI', 'ssDifQurMI', 'ssDifGusMI'], \
+    ['ssRouOffMI', 'ssRouMipMI', 'ssRouBoxMI'\
+    ,'ssRouQudMI', 'ssRouQurMI', 'ssRouGusMI'], \
+    ['ssRelOffMI', 'ssRelMipMI', 'ssRelBoxMI'\
+    ,'ssRelQudMI', 'ssRelQurMI', 'ssRelGusMI'], \
+    ['ssRlcOffMI', 'ssRlcMipMI', 'ssRlcBoxMI'\
+    ,'ssRlcQudMI', 'ssRlcQurMI', 'ssRlcGusMI'], \
+    ['ssGlsOffMI', 'ssGlsMipMI', 'ssGlsBoxMI'\
+    ,'ssGlsQudMI', 'ssGlsQurMI', 'ssGlsGusMI'], \
+    ['ssTrsOffMI', 'ssTrsMipMI', 'ssTrsBoxMI'\
+    ,'ssTrsQudMI', 'ssTrsQurMI', 'ssTrsGusMI'], \
+    ['ssRfcOffMI', 'ssRfcMipMI', 'ssRfcBoxMI'\
+    ,'ssRfcQudMI', 'ssRfcQurMI', 'ssRfcGusMI'], \
+    ['ssRfgOffMI', 'ssRfgMipMI', 'ssRfgBoxMI'\
+    ,'ssRfgQudMI', 'ssRfgQurMI', 'ssRfgGusMI'], \
+    ['ssBmpOffMI', 'ssBmpMipMI', 'ssBmpBoxMI'\
+    ,'ssBmpQudMI', 'ssBmpQurMI', 'ssBmpGusMI'], \
+    ['ssIncOffMI', 'ssIncMipMI', 'ssIncBoxMI'\
+    ,'ssIncQudMI', 'ssIncQurMI', 'ssIncGusMI'], \
+    ['ssOpaOffMI', 'ssOpaMipMI', 'ssOpaBoxMI'\
+    ,'ssOpaQudMI', 'ssOpaQurMI', 'ssOpaGusMI'] ]
 
-    kFILTERS = ( 'off', 'mipmap', 'box', 'quadratic', 'quartic', 'guassian' )
-    kBUMP_VALUES = ( 0.01, 0.02, 0.025, 0.05, 0.1, 0.5, 1 )
+    kFILTERS = ('off', 'mipmap', 'box', 'quadratic', 'quartic', 'guassian')
+    kBUMP_VALUES = (0.01, 0.02, 0.025, 0.05, 0.1, 0.5, 1)
 
-    checks = list( optionVar[ optionsVariableMaps[ 'CCK' ] ] )
-    if type(checks) not in [ list, tuple ] or len(checks) != 12:
+    checks = list(optionVar[optionsVariableMaps['CCK']])
+    if type(checks) not in [list, tuple] or len(checks) != 12:
         mc.warning('shaderSpace optionVar capture failed in Channels')
         checks = optionsDefaultMaps['CCK']
-        optionVar( remove = optionsVariableMaps['CCK'] )
-        optionVar[ optionsVariableMaps['CCK'] ] = optionsDefaultMaps['CCK']
+        optionVar(remove = optionsVariableMaps['CCK'] )
+        optionVar[optionsVariableMaps['CCK']] = optionsDefaultMaps['CCK']
 
-    shorts = list( optionVar[ optionsVariableMaps[ 'CST' ] ] )
-    if type(shorts) not in [ list, tuple ] or len(shorts) != 12:
+    shorts = list(optionVar[optionsVariableMaps['CST']])
+    if type(shorts) not in [list, tuple] or len(shorts) != 12:
         mc.warning('shaderSpace optionVar capture failed in Shorts')
         shorts = optionsDefaultMaps['CST']
-        optionVar( remove = optionsVariableMaps['CST'] )
-        optionVar[ optionsVariableMaps['CST'] ] = optionsDefaultMaps['CST']
+        optionVar(remove = optionsVariableMaps['CST'])
+        optionVar[optionsVariableMaps['CST']] = optionsDefaultMaps['CST']
 
-    filters = list( optionVar[ optionsVariableMaps[ 'CFR' ] ] )
-    if type(filters) not in [ list, tuple ] or len(filters) != 12:
+    filters = list(optionVar[optionsVariableMaps['CFR']])
+    if type(filters) not in [list, tuple] or len(filters) != 12:
         mc.warning('shaderSpace optionVar capture failed in Filters')
         filters = optionsDefaultMaps['CFR']
-        optionVar( remove = optionsVariableMaps['CFR'] )
-        optionVar[ optionsVariableMaps['CFR'] ] = optionsDefaultMaps['CFR']
+        optionVar(remove = optionsVariableMaps['CFR'])
+        optionVar[optionsVariableMaps['CFR']] = optionsDefaultMaps['CFR']
 
     def content(self):
-        self.Col = mc.columnLayout( self.Col, ann = kChannelsPanelAnn )
-        mc.rowLayout( nc = 3, cw3 = (100, 100, 100) )
-        self.checkBoxs[0] = mc.checkBox( self.checkBoxs[0], l = kChannelNames[0], \
-        v = self.checks[0], cc = partial( self.toggle, 0 ) )
-        self.checkBoxs[1] = mc.checkBox( self.checkBoxs[1], l = kChannelNames[1], \
-        v = self.checks[1], cc = partial( self.toggle, 1 ) )
-        self.checkBoxs[2] = mc.checkBox( self.checkBoxs[2], l = kChannelNames[2], \
-        v = self.checks[2], cc = partial( self.toggle, 2 ) )
+        self.Col = mc.columnLayout(self.Col, ann = kChannelsPanelAnn)
+        mc.rowLayout(nc=3, cw3=(100, 100, 100))
+        self.checkBoxs[0] = mc.checkBox(self.checkBoxs[0], l=kChannelNames[0], \
+        v=self.checks[0], cc=partial(self.toggle, 0))
+        self.checkBoxs[1] = mc.checkBox(self.checkBoxs[1], l=kChannelNames[1], \
+        v=self.checks[1], cc=partial(self.toggle, 1))
+        self.checkBoxs[2] = mc.checkBox(self.checkBoxs[2], l=kChannelNames[2], \
+        v=self.checks[2], cc=partial(self.toggle, 2))
         mc.setParent('..')
 
-        mc.rowLayout( nc = 3, cw3 = (100, 100, 100) )
-        self.checkBoxs[3] = mc.checkBox( self.checkBoxs[3], l = kChannelNames[3], \
-        v = self.checks[3], cc = partial( self.toggle, 3 ) )
-        self.checkBoxs[4] = mc.checkBox( self.checkBoxs[4], l = kChannelNames[4], \
-        v = self.checks[4], cc = partial( self.toggle, 4 ) )
-        self.checkBoxs[5] = mc.checkBox( self.checkBoxs[5], l = kChannelNames[5], \
-        v = self.checks[5], cc = partial( self.toggle, 5 ) )
+        mc.rowLayout(nc=3, cw3=(100, 100, 100))
+        self.checkBoxs[3] = mc.checkBox(self.checkBoxs[3], l=kChannelNames[3], \
+        v=self.checks[3], cc=partial(self.toggle, 3))
+        self.checkBoxs[4] = mc.checkBox(self.checkBoxs[4], l=kChannelNames[4], \
+        v=self.checks[4], cc=partial(self.toggle, 4))
+        self.checkBoxs[5] = mc.checkBox(self.checkBoxs[5], l=kChannelNames[5], \
+        v=self.checks[5], cc=partial(self.toggle, 5))
         mc.setParent('..')
 
-        mc.rowLayout( nc = 3, cw3 = (100, 100, 100) )
-        self.checkBoxs[6] = mc.checkBox( self.checkBoxs[6], l = kChannelNames[6], \
-        v = self.checks[6], cc = partial( self.toggle, 6 ) )
-        self.checkBoxs[7] = mc.checkBox( self.checkBoxs[7], l = kChannelNames[7], \
-        v = self.checks[7], cc = partial( self.toggle, 7 ) )
-        self.checkBoxs[8] = mc.checkBox( self.checkBoxs[8], l = kChannelNames[8], \
-        v = self.checks[8], cc = partial( self.toggle, 8 ) )
+        mc.rowLayout(nc=3, cw3=(100, 100, 100))
+        self.checkBoxs[6] = mc.checkBox(self.checkBoxs[6], l = kChannelNames[6], \
+        v=self.checks[6], cc = partial(self.toggle, 6))
+        self.checkBoxs[7] = mc.checkBox(self.checkBoxs[7], l = kChannelNames[7], \
+        v=self.checks[7], cc = partial(self.toggle, 7))
+        self.checkBoxs[8] = mc.checkBox(self.checkBoxs[8], l = kChannelNames[8], \
+        v=self.checks[8], cc = partial(self.toggle, 8))
         mc.setParent('..')
 
-        mc.rowLayout( nc = 3, cw3 = (100, 100, 100) )
-        self.checkBoxs[9] = mc.checkBox( self.checkBoxs[9], l = kChannelNames[9], \
-        v = self.checks[9], cc = partial( self.toggle, 9 ) )
-        self.checkBoxs[10] = mc.checkBox( self.checkBoxs[10], l = kChannelNames[10], \
-        v = self.checks[10], cc = partial( self.toggle, 10 ) )
-        self.checkBoxs[11] = mc.checkBox( self.checkBoxs[11], l = kChannelNames[11], \
-        v = self.checks[11], cc = partial( self.toggle, 11 ) )
+        mc.rowLayout(nc=3, cw3=(100, 100, 100))
+        self.checkBoxs[9] = mc.checkBox(self.checkBoxs[9], l = kChannelNames[9], \
+        v=self.checks[9], cc=partial(self.toggle, 9))
+        self.checkBoxs[10] = mc.checkBox(self.checkBoxs[10], l = kChannelNames[10], \
+        v=self.checks[10], cc=partial(self.toggle, 10))
+        self.checkBoxs[11] = mc.checkBox(self.checkBoxs[11], l = kChannelNames[11], \
+        v=self.checks[11], cc=partial(self.toggle, 11))
         mc.setParent('..')
         mc.setParent('..')
 
         for idx, channel in enumerate( self.checkBoxs ):
-            mc.popupMenu( parent = channel )
-            self.sMenus[idx] = mc.menuItem( self.sMenus[idx], \
-            l = self.shorts[idx], c = partial( self.popShortChange, idx ) )
+            mc.popupMenu(parent=channel)
+            self.sMenus[idx] = mc.menuItem(self.sMenus[idx], \
+            l=self.shorts[idx], c=partial(self.popShortChange, idx))
 
-            mc.popupMenu( parent = channel, ctl = True )
+            mc.popupMenu(parent=channel, ctl=True)
             mc.radioMenuItemCollection()
-            for n, filt in enumerate( self.kFILTERS ):
-                self.fMenus[idx][n] = mc.menuItem( self.fMenus[idx][n], \
-                l = filt, rb = ( self.filters[idx] == n ), \
-                c = partial( self.filterSwitch, idx, n ) )
+            for n, filt in enumerate(self.kFILTERS):
+                self.fMenus[idx][n] = mc.menuItem(self.fMenus[idx][n], \
+                l=filt, rb=(self.filters[idx] == n), \
+                c=partial(self.filterSwitch, idx, n))
 
-        mc.popupMenu( parent = self.checkBoxs[9], alt = True )
-        mc.menuItem( l = 'Bump Value' )
-        mc.menuItem( d = True )
+        mc.popupMenu(parent=self.checkBoxs[9], alt=True)
+        mc.menuItem(l='Bump Value')
+        mc.menuItem(d=True)
         mc.radioMenuItemCollection()
-        for m, value in enumerate( self.kBUMP_VALUES ):
-            mc.menuItem( l = str(value), rb = ( gParameters['BMP'] == self.kBUMP_VALUES[m] ), \
-            c = partial( self.bumpValueSwitch, m ) )
+        for m, value in enumerate(self.kBUMP_VALUES):
+            mc.menuItem(l=str(value), rb=(gParameters['BMP'] == self.kBUMP_VALUES[m]), \
+            c = partial(self.bumpValueSwitch, m))
 
     def toggle(self, *args):
         value = int( mc.checkBox( self.checkBoxs[args[0]], q = True, v = True ) )
@@ -449,9 +448,9 @@ class ActionsBlock(base.BaseBlock):
     width = 300
     height= 160
     label = 'Shader Library'
-    presetsDir = mc.internalVar( ups = True ) + 'attrPresets/'
-    presetUnsetColor = ( 0.371, 0.371, 0.371 )
-    presetSetColor = ( 0.45, 0.6, 0.68 )
+    presetsDir = mc.internalVar(ups=True) + 'attrPresets/'
+    presetUnsetColor = (0.371, 0.371, 0.371)
+    presetSetColor = (0.45, 0.6, 0.68)
 
     def content(self):
         self.Col = mc.columnLayout( self.Col )
@@ -634,26 +633,29 @@ class SubRuleMenu:
     def build(self):
         mc.menuBarLayout()
         mc.menu( l = 'Edit' )
-        mc.menuItem( l = 'Restore', \
-        c=lambda *args : mc.textField(SubRuleBlock.ruleField, e=True, tx=optionsDefaultMaps[self.ruletype]))
+        mc.menuItem( l = 'Restore', c=lambda *args : mc.textField(\
+        SubRuleBlock.ruleField, e=True, tx=optionsDefaultMaps[self.ruletype]))
         mc.setParent('..')
 
-class IntroBlock( base.BaseBlock ):
+class IntroBlock(base.BaseBlock ):
     Frl = 'shaderSpaceIntroFrl'
     Col = 'shaderSpaceIntroCol'
     width = 400
     height= 180
+    def __init__(self, ruletype):
+        self.ruletype = ruletype
 
     def content(self):
-        self.Col = mc.columnLayout( self.Col )
-        mc.text(l=r'All Variabies :')
+        self.Col = mc.columnLayout(self.Col)
+        mc.text(l=r'All Variables :')
         mc.text(l=r'<root> : Project path')
         mc.text(l=r'<asset> : Asset Name')
         mc.text(l=r'<shader> : Shader Name')
         mc.text(l=r'<user> : User Name')
         mc.text(l=r'<version> : Version')
         mc.text(l=r'<c> : Camel-Case determine')
-        mc.text(l=r'<channel> : Channel abbreviation instead')
+        if self.ruletype in ('APR', 'TEX', 'P2D'):
+            mc.text(l=r'<channel> : Channel abbreviation instead')
         mc.setParent('..')
 
 class SubWinUIT( base.BaseUIT ):
@@ -667,7 +669,7 @@ class SubWinUIT( base.BaseUIT ):
 
 def ruleSettingUI(ruletype, title):
     ruleWin = SubRuleUI()
-    blocks = [SubRuleBlock(ruletype), IntroBlock()]
+    blocks = [SubRuleBlock(ruletype), IntroBlock(ruletype)]
     menu = SubRuleMenu(ruletype)
     ruleWin.build(menu, blocks, SubWinUIT(), title)
     ruleWin.show()
