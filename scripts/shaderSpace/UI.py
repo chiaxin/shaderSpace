@@ -423,30 +423,30 @@ class ChannelsBlock( base.BaseBlock ):
             c = partial(self.bumpValueSwitch, m))
 
     def toggle(self, *args):
-        value = int( mc.checkBox( self.checkBoxs[args[0]], q = True, v = True ) )
+        value = int(mc.checkBox(self.checkBoxs[args[0]], q=True, v=True))
         self.checks[args[0]] = value
-        print 'The {0} channel has been switched : {1}'.format( kChannelNames[args[0]], bool(value) )
+        print 'The {0} channel has been switched : {1}'.format(kChannelNames[args[0]], bool(value))
 
     def popShortChange(self, *args):
-        ans = mc.promptDialog( t = 'Channel name', m = 'Enter short:', \
-        b = [ 'OK', 'Cancel' ], db = 'OK', cb = 'Cancel', ds = 'Cancel' )
+        ans = mc.promptDialog(t='Channel name', m='Enter short:', \
+        b=('OK', 'Cancel'), db='OK', cb='Cancel', ds='Cancel')
         if ans == 'Cancel': return
-        short = mc.promptDialog( q = True, tx = True )
-        if not isVaildName( short ):
+        short = mc.promptDialog(q=True, tx=True)
+        if not isVaildName(short):
             mc.warning('This is invaild : ' + short)
         else:
-            self.shorts[ args[0] ] = short
-            mc.menuItem( self.sMenus[args[0]], e = True, l = short )
+            self.shorts[args[0]] = short
+            mc.menuItem(self.sMenus[args[0]], e=True, l=short)
             print 'The channel\'s short name has been changed : {0}'.format(short)
 
     def filterSwitch(self, *args):
-        self.filters[ args[0] ] = args[1]
+        self.filters[args[0]] = args[1]
         print 'The {0} channel\'s filter has been changed : {1}'.\
-        format( kChannelNames[args[0]], self.kFILTERS[args[1]] )
+        format(kChannelNames[args[0]], self.kFILTERS[args[1]])
 
     def bumpValueSwitch(self, *args):
-        gParameters['BMP'] = self.kBUMP_VALUES[ args[0] ]
-        print 'Bump value has been changed : {0}'.format( self.kBUMP_VALUES[args[0]] )
+        gParameters['BMP'] = self.kBUMP_VALUES[args[0]]
+        print 'Bump value has been changed : {0}'.format(self.kBUMP_VALUES[args[0]])
 
 class ActionsBlock(base.BaseBlock):
     Frl = 'shaderSpaceActionsFRL'
@@ -460,19 +460,19 @@ class ActionsBlock(base.BaseBlock):
     presetSetColor = (0.45, 0.6, 0.68)
 
     def content(self):
-        self.Col = mc.columnLayout( self.Col )
-        createSubTab = mc.columnLayout( 'createSubTab' )
+        self.Col = mc.columnLayout(self.Col)
+        createSubTab = mc.columnLayout('createSubTab')
         for sd in kShaderButtons.keys():
-            shaderButton = mc.button( l = kShaderButtons[sd], bgc = self.presetUnsetColor, \
-            en = mc.pluginInfo( kShaderPlugins[sd], q = True, l = True ) \
+            shaderButton = mc.button(l = kShaderButtons[sd], bgc = self.presetUnsetColor, \
+            en = mc.pluginInfo(kShaderPlugins[sd], q=True, l=True) \
             or kShaderPlugins[sd] == 'none', c = partial(self.doIt, shaderType=sd))
             presets = self.getPresets(sd)
             if presets:
-                mc.popupMenu( parent = shaderButton )
+                mc.popupMenu(parent=shaderButton)
                 mc.radioMenuItemCollection()
-                mc.menuItem( l = '-----', rb = True, c = partial( self.unsetPreset, sd, shaderButton ) )
+                mc.menuItem(l='-----', rb=True, c=partial(self.unsetPreset, sd, shaderButton))
                 for preset in presets:
-                    mc.menuItem( l = preset, rb = False,  c = partial( self.setPreset, sd, preset, shaderButton ) )
+                    mc.menuItem(l=preset, rb=False,  c=partial(self.setPreset, sd, preset, shaderButton))
         mc.setParent('..')
 
     def getPresets(self, *args):
@@ -480,19 +480,19 @@ class ActionsBlock(base.BaseBlock):
         if args[0] in kShadersList:
             searchDir = self.presetsDir + '/' + args[0]
             if isdir( searchDir ):
-                presets = [ f[:-4] for f in listdir(searchDir) \
-                if isfile(join(searchDir, f)) and f[-3:] == 'mel' ]
+                presets = [f[:-4] for f in listdir(searchDir) \
+                if isfile(join(searchDir, f)) and f[-3:] == 'mel']
         return presets
 
     def setPreset(self, *args):
         gShaderPresetDefinition[args[0]] = args[1]
-        print '# {0} preset has been set : {1}'.format( args[0], args[1] )
-        mc.button( args[2], e = True, bgc = self.presetSetColor, l = kShaderButtons[args[0]] + ' ~' + args[1] )
+        print '# {0} preset has been set : {1}'.format(args[0], args[1])
+        mc.button(args[2], e=True, bgc=self.presetSetColor, l=kShaderButtons[args[0]] + ' ~' + args[1])
 
     def unsetPreset(self, *args):
         gShaderPresetDefinition[args[0]] = ''
-        print '# {0} preset has been set default'.format( args[0] )
-        mc.button( args[1], e = True, bgc = self.presetUnsetColor, l = kShaderButtons[args[0]] )
+        print '# {0} preset has been set default'.format(args[0])
+        mc.button(args[1], e=True, bgc=self.presetUnsetColor, l=kShaderButtons[args[0]])
 
     def doIt(self, *args, **kwargs):
         def confirm(stype):
@@ -504,7 +504,7 @@ class ActionsBlock(base.BaseBlock):
                 return False
             return True
         try:
-            selections = mc.ls(sl=True)
+            selections = mc.ls(sl=True, dag=True)
             stype = kwargs['shaderType']
             uvMirror = -1
             if OptionsBlock.checks[3]:
@@ -704,7 +704,7 @@ class ToolsBlcok( base.BaseBlock ):
     height= 180
 
     def browse(self):
-        user_input = mc.textFieldButtonGrp(self.pathFieldTFB, q=Tru , tx=True)
+        user_input = mc.textFieldButtonGrp(self.pathFieldTFB, q=True, tx=True)
         directory = mc.fileDialog2(fileMode=3, caption='Save directory choice', dir=user_input)
         if directory:
             mc.textFieldButtonGrp(self.pathFieldTFB, e=True, tx=directory[0])

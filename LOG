@@ -68,3 +68,7 @@ ver 0.4.31 : May/ 22/ 2016
 
 ver 0.4.32 : May/ 22/ 2016
     1. Add copyright header
+
+ver 0.4.33 : May/ 25/ 2016
+    1. Fix bugs
+    2. Add log window
