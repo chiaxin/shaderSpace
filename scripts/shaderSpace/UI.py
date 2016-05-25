@@ -60,6 +60,10 @@ try:
     gParameters['STP'] = mc.optionVar(q=optionsVariableMaps['STP'])
 except:
     gParameters['STP'] = int(optionsDefaultMaps['STP'])
+try:
+    gParameters['LOG'] = mc.optionVar(q=optionsVariableMaps['LOG'])
+except:
+    gParameters['LOG'] = int(optionsDefaultMaps['LOG'])
 
 gShaderPresetDefinition = {}
 for shader in kShadersList:
@@ -101,6 +105,7 @@ class MainMenu:
     Ign = 'shaderSpaceIgnCheck'
     Ail = 'shaderSpaceAilCheck'
     Stp = 'shaderSpaceStpCheck'
+    Log = 'shaderSpaceLogCheck'
     def build(self):
         self.Col = mc.columnLayout(self.Col)
         self.Bar = mc.menuBarLayout(self.Bar)
@@ -125,11 +130,14 @@ class MainMenu:
         mc.setParent('..', menu=True)
 
         self.Ign = mc.menuItem(self.Ign, l='Ignore auto path if not found', \
-        cb=bool(gParameters['IGN']), c=lambda *args : self.toggleIGN())
+        cb=bool(gParameters['IGN']), c=lambda x:gParameters.update(IGN=not gParameters['IGN']))
         self.Ail = mc.menuItem(self.Ail, l='Alpha Is Luminance if outAlpha', \
-        cb=bool(gParameters['AIL']), c=lambda *args : self.toggleAIL())
+        cb=bool(gParameters['AIL']), c=lambda x:gParameters.update(AIL=not gParameters['AIL']))
         self.Stp = mc.menuItem(self.Stp, l='Shared Place2dTexture', \
-        cb=bool(gParameters['STP']), c=lambda *args : self.toggleSTP())
+        cb=bool(gParameters['STP']), c=lambda x:gParameters.update(STP=not gParameters['STP']))
+        mc.menuItem(d=True)
+        self.Log = mc.menuItem(self.Log, l='Show LOG', \
+        cb=bool(gParameters['LOG']), c=lambda x:gParameters.update(LOG=not gParameters['LOG']))
 
         mc.menu(l='Tools')
         mc.menuItem(l='UV Snap Shot',   c=partial(ssTools, 'uvsnapshot', 'Batch UV Snapshot'))
@@ -151,19 +159,6 @@ class MainMenu:
 
         mc.setParent('..')
         mc.setParent('..')
-
-    def toggleIGN(self):
-        gParameters['IGN'] = int(mc.menuItem(self.Ign, q=True, cb=True))
-
-    def toggleAIL(self):
-        gParameters['AIL'] = int(mc.menuItem(self.Ail, q=True, cb=True))
-
-    def toggleSTP(self):
-        gParameters['STP'] = int(mc.menuItem(self.Stp, q=True, cb=True))
-
-    def switchMode(self, *args):
-        mc.deleteUI(MainUI.Frl, layout=True)
-
     def reconnect(self, *args):
         selections = [s for s in mc.ls(sl=True) if mc.nodeType(s) in kShadersList]
         if not selections:
@@ -533,7 +528,8 @@ class ActionsBlock(base.BaseBlock):
             bumpValue=gParameters['BMP'],\
             igroneTexIsNotExists=gParameters['IGN'],\
             isAlphaIsLum=gParameters['AIL'],\
-            isSharedP2d=gParameters['STP'] )
+            isSharedP2d=gParameters['STP'], \
+            showLog=gParameters['LOG'])
         except:
             mc.warning('Error occurred in shader create.')
             raise

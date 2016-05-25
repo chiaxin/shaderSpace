@@ -15,8 +15,8 @@ kLinearProfile = 'scene-linear Rec 709/sRGB'
 kVrayDegammaMethod = 1
 kVrayDegammaValue = 2.2
 
-kVersion = '0.4.33'
-kLastUpdate = 'May, 24, 2016'
+kVersion = '0.4.34'
+kLastUpdate = 'May, 25, 2016'
 
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
@@ -31,7 +31,7 @@ kVrayColorMangementShaders = ('VRayMtl')
 '''
 kChannelNames = ( \
 'Color', 'Bump', 'Roughness', 'Glossiness', 'Reflectivity', \
-'ReflectionColor', 'SpecularColor', 'Transparency', 'Incandescence' )
+'ReflectionColor', 'SpecularColor', 'Transparency', 'Incandescence')
 '''
 kChannelNames = ( \
 'Color', 'DiffuseWeight', 'Roughness', \
@@ -155,7 +155,8 @@ optionsDefaultMaps = { \
 'MIF' : '<asset>_<shader>_materialInfo', \
 'IGN' : 0, \
 'AIL' : 1, \
-'STP' : 1 }
+'STP' : 1, \
+'LOG' : 1 }
 
 # OptionVars name
 optionsVariableMaps = { \
@@ -177,7 +178,8 @@ optionsVariableMaps = { \
 'MIF' : 'shaderSpaceMaterialInfoRuleStrOptVar', \
 'IGN' : 'shaderSpaceIgnoreTexWhenNotExistsIntOptVar', \
 'AIL' : 'shaderSpaceAlphaIsLuminaIntOptVar', \
-'STP' : 'shaderSpaceSharedPlace2dTextureOptVar'}
+'STP' : 'shaderSpaceSharedPlace2dTextureOptVar', \
+'LOG' : 'shaderSpaceShowLogOptVar' }
 
 kChannelsPanelAnn = '''RMB can be change short name
 Ctrl + RMB can be change texture filter

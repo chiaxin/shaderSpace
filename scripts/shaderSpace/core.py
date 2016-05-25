@@ -74,7 +74,6 @@ def substituteVariables(rule, **kwargs):
     rule = rule.replace('<user>',   kwargs.get('user', 'user'))
     rule = rule.replace('<version>',kwargs.get('version', 'version'))
     rule = rule.replace('<root>',  mc.workspace(q=True, rootDirectory=True))
-    print rule
     # If channel is filled, replace it
     if kwargs.has_key('channel'):
         rule = rule.replace('<channel>', kwargs.get('channel', ''))
@@ -131,6 +130,7 @@ def createShader(*args, **kwargs):
         isAutopath  = kwargs['isAutopath']
         isUvMirror  = kwargs['isUvMirror']
         bumpValue   = kwargs['bumpValue']
+        showLog     = kwargs['showLog']
         isGammaCorrect = kwargs['isGammaCorrect']
         isAlphaIsLum = kwargs['isAlphaIsLum']
         isSharedPlace2dTexture = kwargs['isSharedP2d']
@@ -156,13 +156,11 @@ def createShader(*args, **kwargs):
     db='Yes', cb='No', ds='No') == 'No': return
 
     # Log window build
-    logUi = LogUI()
-    logUi.build()
-    logUi.show()
+    logUi = LogUI(); logUi.build()
 
     # Shader create
     mainShader = mc.shadingNode(shaderType, name=mainShader, asShader=True)
-    logUi.append('>> Shader Create -\n{0}, {1}\n'.format(shaderType, mainShader))
+    logUi.append('>> Shader Create :\n', mainShader)
 
     # Preset, using source command
     if preset:
@@ -291,6 +289,8 @@ def createShader(*args, **kwargs):
             connectPlace2dTexture(f, p2d)
             logUi.append('>> Place2dTexture - \n{0}\n'.format(p2d))
 
+    if showLog: logUi.show()
+    else: logUi.destroy()
     return mainShader, shadingGroup
 
 def setColorSpaceToLinear(filenode, version):
