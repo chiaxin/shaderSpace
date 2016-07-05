@@ -14,12 +14,9 @@ kLinearProfile = 'scene-linear Rec 709/sRGB'
 # Vray color space - 0: linear, 1: Gamma, 2: sRGB
 kVrayDegammaMethod = 1
 kVrayDegammaValue = 2.2
-
-kVersion = '0.4.34'
-kLastUpdate = 'May, 25, 2016'
-
+kVersion = '0.5.01'
+kLastUpdate = 'Jun, 30, 2016'
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
-
 kDegammaValue = 0.454
 
 # List shaders supported
@@ -28,12 +25,7 @@ kColorManagementShaders = ('blinn', 'mia_material_x_passes')
 kVrayColorMangementShaders = ('VRayMtl')
 
 # The channel's name in tuple
-'''
-kChannelNames = ( \
-'Color', 'Bump', 'Roughness', 'Glossiness', 'Reflectivity', \
-'ReflectionColor', 'SpecularColor', 'Transparency', 'Incandescence')
-'''
-kChannelNames = ( \
+kChannelList = ( \
 'Color', 'DiffuseWeight', 'Roughness', \
 'Reflectance', 'ReflectionColor', 'ReflGlossiness', \
 'Transparency', 'RefractionColor', 'RefraGlossiness', \
@@ -56,16 +48,16 @@ kShaderButtons = { \
 # This dictionary describe how to connect shading
 kConnectSG = { \
 ### blinn
-'blinn' : ( ('outColor', 'surfaceShader'), ), \
+'blinn' : (('outColor', 'surfaceShader'),), \
 ### mia_material_x_passes
 'mia_material_x_passes' : ( \
-('message', 'miMaterialShader' ), \
-('message', 'miShadowShader' ), \
-('message', 'miPhotonShader' ) ), \
+('message', 'miMaterialShader'), \
+('message', 'miShadowShader'), \
+('message', 'miPhotonShader')), \
 ### aiStandard
-'aiStandard' : ( ('outColor', 'surfaceShader'), ), \
+'aiStandard' : (('outColor', 'surfaceShader'),), \
 ### VRayMtl
-'VRayMtl' : ( ('outColor', 'surfaceShader'), ) \
+'VRayMtl' : (('outColor', 'surfaceShader'),) \
 }
 
 kBumpChannel = { \
@@ -135,71 +127,23 @@ kRelatives = { \
 ('outColor', 'opacityMap') )
 }
 
-# Default options
-optionsDefaultMaps = { \
-'AST' : 'asset', \
-'SDN' : 'shader', \
-'USR' : 'user', \
-'VER' : 'v01', \
-'OPT' : [ 1, 0, 1, 0 ], \
-'APR' : '<root>/sourceimages/<asset>/<asset>_<shader>_<channel>_<version>.tga', \
-'CST' : ['col', 'dif', 'rhs', 'rfl', 'rlc', 'rlg', 'trs', 'rfc', 'rfg', 'bmp', 'inc', 'opc'], \
-'CCK' : [ 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0 ], \
-'CFR' : [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ], \
-'BMP' : 0.1, \
-'SNR' : '<asset>_<shader>_SD', \
-'SGN' : '<asset>_<shader>_SG', \
-'TEX' : '<asset>_<shader>_<channel>', \
-'B2D' : '<asset>_<shader>_bump2d', \
-'P2D' : '<asset>_<shader>_place2dTexture', \
-'MIF' : '<asset>_<shader>_materialInfo', \
-'IGN' : 0, \
-'AIL' : 1, \
-'STP' : 1, \
-'LOG' : 1 }
-
-# OptionVars name
-optionsVariableMaps = { \
-'AST' : 'shaderSpaceAssetNameStrOptVar', \
-'SDN' : 'shaderSpaceShaderNameStrOptVar', \
-'USR' : 'shaderSpaceUserNameStrOptVar', \
-'VER' : 'shaderSpaceVersionStrOptVar', \
-'OPT' : 'shaderSpaceOptionsIntOptVars', \
-'APR' : 'shaderSpaceAutoPathRuleStrOptVar', \
-'CST' : 'shaderSpaceChannelShortStrOptVars', \
-'CCK' : 'shaderSpaceChannelChecksIntOptVars', \
-'CFR' : 'shaderSpaceChannelFiltersIntOptVars', \
-'BMP' : 'shaderSpaceBumpIndexIntOptVar', \
-'SNR' : 'shaderSpaceShaderNameRuleStrOptVar', \
-'SGN' : 'shaderSpaceShadingGroupRuleStrOptVar', \
-'TEX' : 'shaderSpaceTextureNodeRuleStrOptVar', \
-'B2D' : 'shaderSpaceTextureBump2dRuleStrOptVar', \
-'P2D' : 'shaderSpacePlace2dTextureRuleStrOptVar', \
-'MIF' : 'shaderSpaceMaterialInfoRuleStrOptVar', \
-'IGN' : 'shaderSpaceIgnoreTexWhenNotExistsIntOptVar', \
-'AIL' : 'shaderSpaceAlphaIsLuminaIntOptVar', \
-'STP' : 'shaderSpaceSharedPlace2dTextureOptVar', \
-'LOG' : 'shaderSpaceShowLogOptVar' }
-
-kChannelsPanelAnn = '''RMB can be change short name
-Ctrl + RMB can be change texture filter
-Alt + RMB can be change bump value
-'''
-
-kAssignAnn = 'Would be assign shader when created'
-kGammaCorrectAnn = 'Would be make gamma correct in texture'
-kAutoFileAnn = 'Would be set texture path automatically ( RMB can be set the rule )'
-kMirrorAnn = 'Would be set place2dTexture mirror U, V or both ( RMB can be switch )'
-
-kAboutContent = '''About Shader Space
-
-Author : Chia Xin Lin
-
-Contact : nnnight@gmail.com
-
-Version : ''' + kVersion + '\n\n' + '''\
-Last Update : ''' + kLastUpdate + '\n\n' +'''\
-The Shader Space tool be able to create a shader with texture connections,
-And provide some useful option and functions. If you have any questions,
-even suggestions or requires, You can send e-mail to tell me, Thanks.
-'''
+kDefaultMappings = { \
+    'shaderSpaceNameStrOptVars':['asset', 'shader', 'user', 'v01'], \
+    'shaderSpaceChannelsIntOptVars':[2, 0, 0, 2, 0, 2, 0, 0, 0, 2, 0, 0], \
+    'shaderSpaceShaderIntOptVar':0, \
+    'shaderSpaceOptionIntOptVars':[1, 0, 1, 0, 0], \
+    'shaderSpaceBumpValueFloatOptVar':0.1, \
+    'shaderSpaceAlphaIsLuminanceIntOptVar':2, \
+    'shaderSpaceFilterTypeIntOptVar':1, \
+    'shaderSpaceAbbreviationsStrOptVars':['col', 'dif', 'rough', \
+    'rfl', 'spc', 'gls', 'trs', 'rfc', 'rfg', 'bmp', 'inc', 'opc'], \
+    'shaderSpaceAutoPathRuleStrOptVar'\
+    :'<root>/sourceimages/<asset>/<asset>_<shader>_<channel>_<version>.tga', \
+    'shaderSpaceNodeNameRuleStrOptVars'\
+    :['<asset>_<shader>_SD', '<asset>_<shader>_SG', \
+    '<asset>_<shader>_<channel>', '<asset>_<shader>_bmp2d', \
+    '<asset>_<shader>_place2dTexture', '<asset>_<shader>_materialInfo'], \
+    'shaderSpaceToolsPathStrOptVars':['', '', '', ''], \
+    'shaderSpaceUvSnapshotOptionIntOptVars':[0, 1, 1, 0], \
+    'shaderSpacePolygonExportOptionIntOptVars':[0, 0], \
+    'shaderSpacePolygonExportOptionStrOptVars':['', ''] }
