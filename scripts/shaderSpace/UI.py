@@ -9,6 +9,9 @@ Github : http://github.com/chiaxin
 '''
 import copy
 import sys
+import pickle
+from os import listdir
+from os.path import isfile, isdir, splitext
 from PySide import QtGui, QtCore
 from shiboken import wrapInstance
 from functools import partial
@@ -17,6 +20,8 @@ import maya.cmds as mc
 import maya.OpenMayaUI as omui
 from config import *
 from core import createShader
+from tools import uvSnapshot, exportPolygons
+from tools import exportShaders, createPhotoshopFile
 
 ###############################################################
 # User options dictionary
@@ -26,13 +31,24 @@ for optVar in kDefaultMappings.keys():
     if not mc.optionVar(exists=optVar):
         gInitialOptions[optVar] = copy.deepcopy(kDefaultMappings[optVar])
     else:
-        gInitialOptions[optVar] = mc.optionVar(q=optVar)
-
+        buff = mc.optionVar(q=optVar)
+        if type(buff) != type(kDefaultMappings[optVar]):
+            gInitialOptions[optVar] = copy.deepcopy(kDefaultMappings[optVar])
+        elif isinstance(kDefaultMappings[optVar], list) \
+        and len(buff) != len(kDefaultMappings[optVar]):
+            gInitialOptions[optVar] = copy.deepcopy(kDefaultMappings[optVar])
+        else:
+            gInitialOptions[optVar] = mc.optionVar(q=optVar)
+gShaderPreset = 'No Preset'
 ###############################################################
 # Validator
 ###############################################################
-gValidMayaNode = QtGui.QRegExpValidator(
-    QtCore.QRegExp(r'[a-zA-Z_]\w+'))
+gLegalMayaNodeName = QtGui.QRegExpValidator(
+    QtCore.QRegExp(r'\w+'))
+
+# Without illegal window fine name char and space
+gLegalWindowFileName = QtGui.QRegExpValidator(
+    QtCore.QRegExp('^[^\/\\\:\*\?\"\<\>\| ]+$'))
 
 ###############################################################
 # Custom slot
@@ -64,31 +80,92 @@ def getMayaMainWin():
     return wrapInstance(long(pointer), QtGui.QWidget)
 
 def shaderGenerate():
-    global gInitialOptions
-    shader, shadingGroup = createShader(**gInitialOptions)
-    print shader, shadingGroup
+    global gInitialOptions, gShaderPreset
+    shader, shadingGroup = \
+    createShader(preset=gShaderPreset, **gInitialOptions)
+    if shader:
+        print shader, shadingGroup, ' has been created.'
 
 class ShaderSpaceMainWin(QtGui.QMainWindow):
     '''Shader Space Main Window'''
     def __init__(self, parent=getMayaMainWin()):
         super(ShaderSpaceMainWin, self).__init__(parent)
         self.setWindowTitle('Shader Space v'+kVersion)
+        # Actions
+        save_action = QtGui.QAction('&Save', self)
+        load_action = QtGui.QAction('&Load', self)
+        help_action = QtGui.QAction('&Help', self)
+        about_action= QtGui.QAction('&About', self)
+        file_menu = self.menuBar().addMenu('&File')
+        help_menu = self.menuBar().addMenu('&Help')
+        file_menu.addAction(save_action)
+        file_menu.addAction(load_action)
+        # No implement, set disable
+        file_menu.setEnabled(False)
+        help_menu.addAction(help_action)
+        help_menu.addAction(about_action)
+        # Connect
+        save_action.triggered.connect(self._dumpSave)
+        load_action.triggered.connect(self._dumpLoad)
+        help_action.triggered.connect(self._help)
+        about_action.triggered.connect(self._about)
+        # Initial
         self.initUI()
 
     def initUI(self):
         centralWidget = ShaderSpaceCentral()
         self.setCentralWidget(centralWidget)
-        self.statusBar()
+        self.resize(self.minimumSizeHint())
 
     def closeEvent(self, event):
         self.storeOptionVars()
         event.accept()
+
+    def _help(self):
+        dialog = HelpDialog()
+        dialog.show()
+
+    def _about(self):
+        dialog = AboutDialog()
+        dialog.show()
 
     def storeOptionVars(self):
         global gInitialOptions
         from pymel.all import optionVar
         for var, value in gInitialOptions.items():
             optionVar[var] = value
+
+    def _dumpSave(self):
+        data_file, fl = QtGui.QFileDialog.getSaveFileName(
+            self, 'Save shader space options',
+            'D:/TEMP', 'spk (*.spk)')
+        if not data_file:
+            return
+        abbreviations_data = \
+            gInitialOptions['shaderSpaceAbbreviationsStrOptVars']
+        try:
+            io_file = open(data_file, 'wb')
+            pickle.dump(abbreviations_data, io_file)
+        except:
+            raise
+        finally:
+            io_file.close()
+
+    def _dumpLoad(self):
+        data_file, fl = QtGui.QFileDialog.getOpenFileName(
+            self, 'Load shader space options',
+            'D:/TEMP', 'spk (*.spk)')
+        if not data_file:
+            return
+        try:
+            io_file = open(data_file, 'rb')
+            data_buff = pickle.load(io_file)
+        except:
+            raise
+        else:
+            pass
+        finally:
+            io_file.close()
 
 class ShaderSpaceCentral(QtGui.QWidget):
     '''Main window central'''
@@ -104,8 +181,8 @@ class ShaderSpaceCentral(QtGui.QWidget):
         # Tab
         tab = QtGui.QTabWidget()
         tab.addTab(createWidget, 'Creation')
-        tab.addTab(toolsWidget, 'Tools')
         tab.addTab(settingWidget, 'Settings')
+        tab.addTab(toolsWidget, 'Tools')
         # Layouts
         layout = QtGui.QVBoxLayout()
         layout.addWidget(tab)
@@ -115,11 +192,13 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
     '''Shader Space Creation Page'''
     # Signal object
     sender = QtCore.Signal(str, int, str)
+    presets_dir = mc.internalVar(ups=True)+'attrPresets/'
     def __init__(self, parent=None):
         super(ShaderSpaceCreateWin, self).__init__(parent)
         self.initUI()
 
     def initUI(self):
+        # set connect
         self.sender.connect(updateOptions)
         grid = QtGui.QGridLayout()
         grid.addWidget(self.buildNamingTextField(), 0, 0)
@@ -143,10 +222,10 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
         versionLe = QtGui.QLineEdit(names[3])
         versionLe.setMinimumHeight(24)
         # Set validator
-        assetLe.setValidator(gValidMayaNode)
-        shaderLe.setValidator(gValidMayaNode)
-        userLe.setValidator(gValidMayaNode)
-        versionLe.setValidator(gValidMayaNode)
+        assetLe.setValidator(gLegalMayaNodeName)
+        shaderLe.setValidator(gLegalMayaNodeName)
+        userLe.setValidator(gLegalMayaNodeName)
+        versionLe.setValidator(gLegalMayaNodeName)
         # Layout
         grid = QtGui.QGridLayout()
         grid.addWidget(QtGui.QLabel('Asset'), 0, 0)
@@ -173,6 +252,10 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
         versionLe.textEdited.connect(
             lambda text: self.sender.emit('shaderSpaceNameStrOptVars',
                 3, text))
+        assetLe.textEdited.connect(self._checkEmpty)
+        shaderLe.textEdited.connect(self._checkEmpty)
+        userLe.textEdited.connect(self._checkEmpty)
+        versionLe.textEdited.connect(self._checkEmpty)
         return groupBox
 
     def buildChannelCheckBoxs(self):
@@ -222,7 +305,7 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
             lambda idx: self.sender.emit('shaderSpaceOptionIntOptVars',
                 1, str(idx)))
         afpCbb = QtGui.QComboBox()
-        afpCbb.addItem('Auto fill path')
+        afpCbb.addItem('Auto fill texture path')
         afpCbb.addItem('Auto fill path if exists')
         afpCbb.addItem('Do not auto fill path')
         afpCbb.setCurrentIndex(options[2])
@@ -291,6 +374,7 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
         bumpValueLe.textEdited.connect(
             lambda text: self.sender.emit('shaderSpaceBumpValueFloatOptVar',
                 0, text))
+        bumpValueLe.textEdited.connect(self._checkEmpty)
         filterCbb.currentIndexChanged.connect(
             lambda idx: self.sender.emit('shaderSpaceFilterTypeIntOptVar',
                 0, str(idx)))
@@ -310,8 +394,8 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
         shadersCbb.currentIndexChanged.connect(
             lambda idx: self.sender.emit(
                 'shaderSpaceShaderIntOptVar', 0, str(idx)))
-        presetCbb = QtGui.QComboBox()
-        presetCbb.addItem('No Preset')
+        self.presetCbb = QtGui.QComboBox()
+        self._resetPresets(kShadersList[shader_index])
         # Layout
         groupBox = QtGui.QGroupBox('Shaders')
         groupBox.setAlignment(QtCore.Qt.AlignCenter)
@@ -319,26 +403,62 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
         grid.addWidget(QtGui.QLabel('Shader Selections'), 0, 0)
         grid.addWidget(shadersCbb, 0, 1)
         grid.addWidget(QtGui.QLabel('Shader Presets'), 1, 0)
-        grid.addWidget(presetCbb, 1, 1)
+        grid.addWidget(self.presetCbb, 1, 1)
         groupBox.setLayout(grid)
+        # Connect
+        shadersCbb.activated[str].connect(
+            lambda shaderType: self._resetPresets(shaderType))
+        self.presetCbb.activated[str].connect(
+            lambda preset: self._updatePreset(preset))
         return groupBox
 
     def buildExecuteButtons(self):
         # Widget
-        createBtn = QtGui.QPushButton('Create')
-        createBtn.setMinimumHeight(36)
-        createBtn.setMinimumWidth(100)
+        self.createShaderButton = QtGui.QPushButton('Create')
+        self.createShaderButton.setMinimumHeight(36)
+        self.createShaderButton.setMinimumWidth(100)
         # Layout
         layout = QtGui.QVBoxLayout()
-        layout.addWidget(createBtn)
+        layout.addWidget(self.createShaderButton)
         frame = QtGui.QFrame()
         frame.setLayout(layout)
         # Connect
-        createBtn.clicked.connect(shaderGenerate)
+        self.createShaderButton.clicked.connect(shaderGenerate)
         return frame
+
+    def _checkEmpty(self, context):
+        if not context:
+            self.createShaderButton.setEnabled(False)
+        else:
+            self.createShaderButton.setEnabled(True)
+
+    def _updatePreset(self, preset):
+        global gShaderPreset
+        gShaderPreset = preset
+
+    def _resetPresets(self, shaderType):
+        self.presetCbb.clear()
+        self.presetCbb.addItem('No Preset')
+        search_dir = self.presets_dir+'/'+shaderType
+        if not isdir(search_dir):
+            return []
+        presets_set = []
+        for mel in listdir(search_dir):
+            buff = splitext(mel)
+            if buff[1] == '.mel':
+                presets_set.append(buff[0])
+        if presets_set:
+            self.presetCbb.addItems(presets_set)
 
 class ShaderSpaceToolsWin(QtGui.QWidget):
     sender = QtCore.Signal(str, int, str)
+    uvsnapshot_ext_set = ('png', 'tif', 'jpg', 'tga', 'bmp')
+    resolutions = ('512', '1024', '2048', '4096')
+    uvsnapshot_col_set = ('Black', 'White', 'Red')
+    uvsnapshot_col_map = ((0, 0, 0), (255, 255, 255), (255, 0, 0))
+    export_poly_type = ('ma', 'mb', 'obj')
+    selected_or_all = ('Selected', 'All')
+    options_alignment = QtCore.Qt.AlignRight
     def __init__(self, parent=None):
         super(ShaderSpaceToolsWin, self).__init__(parent)
         self.initUI()
@@ -348,13 +468,13 @@ class ShaderSpaceToolsWin(QtGui.QWidget):
         self.org_paths = copy.deepcopy(
             gInitialOptions['shaderSpaceToolsPathStrOptVars'])
         layout = QtGui.QVBoxLayout()
-        layout.addWidget(self.uvsnapshot())
-        layout.addWidget(self.polygonExport())
-        layout.addWidget(self.photoshopFileCreate())
-        layout.addWidget(self.shaderExport())
+        layout.addWidget(self._uvSnapshotArea())
+        layout.addWidget(self._exportPolygonsArea())
+        layout.addWidget(self._photoshopFileCreateArea())
+        layout.addWidget(self._shaderExportArea())
         self.setLayout(layout)
 
-    def uvsnapshot(self):
+    def _uvSnapshotArea(self):
         global gInitialOptions
         options = copy.deepcopy(
             gInitialOptions['shaderSpaceUvSnapshotOptionIntOptVars'])
@@ -366,21 +486,22 @@ class ShaderSpaceToolsWin(QtGui.QWidget):
         uvssPathLe.textChanged.connect(
             lambda text: self.sender.emit('shaderSpaceToolsPathStrOptVars',
                 0, text))
-        uvssBrowseBtn = QtGui.QPushButton('browse')
-        uvssBrowseBtn.setMaximumWidth(60)
+        uvssBrowseBtn = QtGui.QPushButton('...')
+        uvssBrowseBtn.setMinimumWidth(40)
         uvssExtCbb = QtGui.QComboBox()
-        uvssExtCbb.addItems(('png', 'tif', 'jpg', 'tga', 'bmp'))
+        uvssExtCbb.addItems(self.uvsnapshot_ext_set)
+        uvssExtCbb.setCurrentIndex(options[0])
         uvssResCbb = QtGui.QComboBox()
-        uvssResCbb.setCurrentIndex(options[0])
-        uvssResCbb.addItems(('512', '1024', '2048', '4096'))
+        uvssResCbb.addItems(self.resolutions)
         uvssResCbb.setCurrentIndex(options[1])
         uvssColorCbb = QtGui.QComboBox()
-        uvssColorCbb.addItems(('Black', 'White', 'Red'))
+        uvssColorCbb.addItems(self.uvsnapshot_col_set)
         uvssColorCbb.setCurrentIndex(options[2])
         uvssSourceCbb = QtGui.QComboBox()
-        uvssSourceCbb.addItems(('Display Layer', 'Sets'))
+        uvssSourceCbb.addItems(('Visible Display Layers', 'Sets'))
         uvssSourceCbb.setCurrentIndex(options[3])
         uvssMakeBtn = QtGui.QPushButton('Snapshot')
+        uvssMakeBtn.setMinimumWidth(80)
         # Layout
         right = QtCore.Qt.AlignRight
         vlayout = QtGui.QVBoxLayout()
@@ -390,31 +511,38 @@ class ShaderSpaceToolsWin(QtGui.QWidget):
         hlayout01.addWidget(uvssPathLe)
         hlayout01.addWidget(uvssBrowseBtn)
         hlayout01.addWidget(uvssMakeBtn)
+        hlayout02.addWidget(QtGui.QLabel('Extension'), 0, right)
+        hlayout02.addWidget(uvssExtCbb, 0, right)
         hlayout02.addWidget(QtGui.QLabel('Resolutions'), 0, right)
         hlayout02.addWidget(uvssResCbb, 0, right)
         hlayout02.addWidget(QtGui.QLabel('Colors'), 0, right)
         hlayout02.addWidget(uvssColorCbb, 0, right)
         hlayout02.addWidget(QtGui.QLabel('Source'), 0, right)
         hlayout02.addWidget(uvssSourceCbb, 0, right)
+        hlayout02.setAlignment(self.options_alignment)
         vlayout.addLayout(hlayout01)
         vlayout.addLayout(hlayout02)
         groupBox.setLayout(vlayout)
         # Connect
         uvssBrowseBtn.clicked.connect(
-            partial(self.fileDialog, 'UV Snapshot Directory',
+            partial(self._fileDialog, 'UV Snapshot Directory',
                 uvssPathLe))
-        uvssResCbb.currentIndexChanged.connect(
+        uvssExtCbb.currentIndexChanged.connect(
             lambda idx: self.sender.emit(
                 'shaderSpaceUvSnapshotOptionIntOptVars', 0, str(idx)))
-        uvssColorCbb.currentIndexChanged.connect(
+        uvssResCbb.currentIndexChanged.connect(
             lambda idx: self.sender.emit(
                 'shaderSpaceUvSnapshotOptionIntOptVars', 1, str(idx)))
-        uvssSourceCbb.currentIndexChanged.connect(
+        uvssColorCbb.currentIndexChanged.connect(
             lambda idx: self.sender.emit(
                 'shaderSpaceUvSnapshotOptionIntOptVars', 2, str(idx)))
+        uvssSourceCbb.currentIndexChanged.connect(
+            lambda idx: self.sender.emit(
+                'shaderSpaceUvSnapshotOptionIntOptVars', 3, str(idx)))
+        uvssMakeBtn.clicked.connect(self._uv_snapshot)
         return groupBox
 
-    def polygonExport(self):
+    def _exportPolygonsArea(self):
         global gInitialOptions
         options = gInitialOptions['shaderSpacePolygonExportOptionIntOptVars']
         includes= gInitialOptions['shaderSpacePolygonExportOptionStrOptVars']
@@ -423,20 +551,18 @@ class ShaderSpaceToolsWin(QtGui.QWidget):
         groupBox.setAlignment(QtCore.Qt.AlignCenter)
         # Component
         pePathLe = QtGui.QLineEdit(self.org_paths[1])
-        pePathLe.textChanged.connect(
-            lambda text: self.sender.emit('shaderSpaceToolsPathStrOptVars',
-                1, text))
-        pePathBrowseBtn = QtGui.QPushButton('browse')
-        pePathBrowseBtn.setMaximumWidth(60)
+        pePathBrowseBtn = QtGui.QPushButton('...')
+        pePathBrowseBtn.setMinimumWidth(40)
         peModeCbb = QtGui.QComboBox()
         peModeCbb.addItems(('Maya Ascii', 'Maya Binary', 'Obj'))
         peModeCbb.setCurrentIndex(options[0])
         peSourceCbb = QtGui.QComboBox()
-        peSourceCbb.addItems(('Display Layer', 'Sets'))
+        peSourceCbb.addItems(('Visible Display Layers', 'Sets'))
         peModeCbb.setCurrentIndex(options[1])
         peExludeLe = QtGui.QLineEdit(includes[0])
         peIncludeLe = QtGui.QLineEdit(includes[1])
-        self.peMakeBtn = QtGui.QPushButton('Export')
+        peMakeBtn = QtGui.QPushButton('Export')
+        peMakeBtn.setMinimumWidth(80)
         # Layout
         right = QtCore.Qt.AlignRight
         vlayout = QtGui.QVBoxLayout()
@@ -445,7 +571,7 @@ class ShaderSpaceToolsWin(QtGui.QWidget):
         hlayout01.addWidget(QtGui.QLabel('Path'))
         hlayout01.addWidget(pePathLe)
         hlayout01.addWidget(pePathBrowseBtn)
-        hlayout01.addWidget(self.peMakeBtn)
+        hlayout01.addWidget(peMakeBtn)
         hlayout02.addWidget(QtGui.QLabel('Mode'))
         hlayout02.addWidget(peModeCbb)
         hlayout02.addWidget(QtGui.QLabel('Source'))
@@ -454,12 +580,16 @@ class ShaderSpaceToolsWin(QtGui.QWidget):
         hlayout02.addWidget(peExludeLe)
         hlayout02.addWidget(QtGui.QLabel('Include'))
         hlayout02.addWidget(peIncludeLe)
+        hlayout02.setAlignment(self.options_alignment)
         vlayout.addLayout(hlayout01)
         vlayout.addLayout(hlayout02)
         groupBox.setLayout(vlayout)
         # Connect
+        pePathLe.textChanged.connect(
+            lambda text: self.sender.emit('shaderSpaceToolsPathStrOptVars',
+                1, text))
         pePathBrowseBtn.clicked.connect(
-            partial(self.fileDialog, 'Polygon Export Directory',
+            partial(self._fileDialog, 'Polygon Export Directory',
                 pePathLe))
         peModeCbb.currentIndexChanged.connect(
             lambda idx: self.sender.emit(
@@ -473,56 +603,97 @@ class ShaderSpaceToolsWin(QtGui.QWidget):
         peIncludeLe.textEdited.connect(
             lambda text: self.sender.emit(
                 'shaderSpacePolygonExportOptionStrOptVars', 1, text))
+        peMakeBtn.clicked.connect(self._export_polygons)
         return groupBox
 
-    def photoshopFileCreate(self):
+    def _photoshopFileCreateArea(self):
         # Group
         groupBox = QtGui.QGroupBox('Photoshop File Generate')
         groupBox.setAlignment(QtCore.Qt.AlignCenter)
         # Component
         psPathLe = QtGui.QLineEdit(self.org_paths[2])
-        psPathBrowseBtn = QtGui.QPushButton('browse')
-        psPathBrowseBtn.setMaximumWidth(60)
-        psNamesLe = QtGui.QLineEdit()
-        psUVsLe = QtGui.QLineEdit()
+        psPathBrowseBtn = QtGui.QPushButton('...')
+        psPathBrowseBtn.setMinimumWidth(40)
+        psUvPathBrowseBtn = QtGui.QPushButton('...')
+        psUvPathBrowseBtn.setMinimumWidth(40)
+        psResCbb = QtGui.QComboBox()
+        psResCbb.addItems(self.resolutions)
+        psResCbb.setCurrentIndex(
+            gInitialOptions['shaderSpacePhotoshopOptionIntOptVars'][0])
+        psUvPathLe = QtGui.QLineEdit(self.org_paths[4])
+        psNamesLe = QtGui.QLineEdit(
+            gInitialOptions['shaderSpacePhotoshopNamesStrOptVars'][0])
+        psUvLe = QtGui.QLineEdit(
+            gInitialOptions['shaderSpacePhotoshopNamesStrOptVars'][1])
         psMakeBtn = QtGui.QPushButton('Generate')
+        psMakeBtn.setMinimumWidth(80)
+        # Conditions
+        psNamesLe.setValidator(gLegalWindowFileName)
+        psUvLe.setValidator(gLegalWindowFileName)
         # Layout
         vlayout = QtGui.QVBoxLayout()
         hlayout01 = QtGui.QHBoxLayout()
         hlayout02 = QtGui.QHBoxLayout()
+        hlayout03 = QtGui.QHBoxLayout()
         hlayout01.addWidget(QtGui.QLabel('Path'))
         hlayout01.addWidget(psPathLe)
         hlayout01.addWidget(psPathBrowseBtn)
         hlayout01.addWidget(psMakeBtn)
-        hlayout02.addWidget(QtGui.QLabel('PS Names'))
-        hlayout02.addWidget(psNamesLe)
-        hlayout02.addWidget(QtGui.QLabel('UV Names'))
-        hlayout02.addWidget(psUVsLe)
+        hlayout02.addWidget(QtGui.QLabel('UV Path'))
+        hlayout02.addWidget(psUvPathLe)
+        hlayout02.addWidget(psUvPathBrowseBtn)
+        hlayout02.addWidget(QtGui.QLabel('Resolutions'))
+        hlayout02.addWidget(psResCbb)
+        hlayout02.setAlignment(self.options_alignment)
+        hlayout03.addWidget(QtGui.QLabel('PS Names'))
+        hlayout03.addWidget(psNamesLe)
+        hlayout03.addWidget(QtGui.QLabel('UV Names'))
+        hlayout03.addWidget(psUvLe)
+        hlayout03.setAlignment(self.options_alignment)
         vlayout.addLayout(hlayout01)
         vlayout.addLayout(hlayout02)
+        vlayout.addLayout(hlayout03)
         groupBox.setLayout(vlayout)
         # Connect
         psPathLe.textChanged.connect(
             lambda text: self.sender.emit(
                 'shaderSpaceToolsPathStrOptVars', 2, text))
+        psUvPathLe.textChanged.connect(
+            lambda text: self.sender.emit(
+                'shaderSpaceToolsPathStrOptVars', 4, text))
+        psNamesLe.textChanged.connect(
+            lambda text: self.sender.emit(
+                'shaderSpacePhotoshopNamesStrOptVars', 0, text))
+        psUvLe.textChanged.connect(
+            lambda text: self.sender.emit(
+                'shaderSpacePhotoshopNamesStrOptVars', 1, text))
         psPathBrowseBtn.clicked.connect(
-            partial(self.fileDialog, 'Photoshop File Generate Directory',
+            partial(self._fileDialog, 'Photoshop File Generate Directory',
                 psPathLe))
+        psUvPathBrowseBtn.clicked.connect(
+            partial(self._fileDialog, 'UV Image Directory',
+                psUvPathLe))
+        psResCbb.currentIndexChanged.connect(
+            lambda idx: self.sender.emit(
+                'shaderSpacePhotoshopOptionIntOptVars', 0, str(idx)))
+        psMakeBtn.clicked.connect(self._photoshop_file_create)
         return groupBox
 
-    def shaderExport(self):
+    def _shaderExportArea(self):
         global gInitialOptions
         # Group
         groupBox = QtGui.QGroupBox('Shader Export')
         groupBox.setAlignment(QtCore.Qt.AlignCenter)
         # Component
         sePathLe = QtGui.QLineEdit(self.org_paths[3])
-        sePathBrowseBtn = QtGui.QPushButton('browse')
-        sePathBrowseBtn.setMaximumWidth(60)
+        sePathBrowseBtn = QtGui.QPushButton('...')
+        sePathBrowseBtn.setMinimumWidth(40)
         seMakeBtn = QtGui.QPushButton('Export')
+        seMakeBtn.setMinimumWidth(80)
         seMethodCbb = QtGui.QComboBox()
-        for method in ('Selected', 'All'):
-            seMethodCbb.addItem(method)
+        seMethodCbb.addItems((self.selected_or_all))
+        seMethodCbb.setCurrentIndex(
+            gInitialOptions['shaderSpaceShaderExportIntOptVars'][0])
         # Layout
         vlayout = QtGui.QVBoxLayout()
         hlayout01 = QtGui.QHBoxLayout()
@@ -533,6 +704,8 @@ class ShaderSpaceToolsWin(QtGui.QWidget):
         hlayout01.addWidget(seMakeBtn)
         hlayout02.addWidget(QtGui.QLabel('Method'))
         hlayout02.addWidget(seMethodCbb)
+        hlayout02.setAlignment(QtCore.Qt.AlignLeft)
+        hlayout02.setAlignment(self.options_alignment)
         vlayout.addLayout(hlayout01)
         vlayout.addLayout(hlayout02)
         groupBox.setLayout(vlayout)
@@ -541,23 +714,73 @@ class ShaderSpaceToolsWin(QtGui.QWidget):
             lambda text: self.sender.emit(
                 'shaderSpaceToolsPathStrOptVars', 3, text))
         sePathBrowseBtn.clicked.connect(
-            partial(self.fileDialog, 'Shader Export Directory',
+            partial(self._fileDialog, 'Shader Export Directory',
                 sePathLe))
+        seMakeBtn.clicked.connect(self._export_shaders)
+        seMethodCbb.currentIndexChanged.connect(
+            lambda idx: self.sender.emit(
+                'shaderSpaceShaderExportIntOptVars', 0, str(idx)))
         return groupBox
 
-    def fileDialog(self, title, lineEdit):
+    def _fileDialog(self, title, lineEdit):
         dir_name = QtGui.QFileDialog.getExistingDirectory(self,
             title, lineEdit.text())
         if dir_name:
             dir_name = dir_name.replace('\\', '/')
             lineEdit.setText(dir_name)
 
+    def _uv_snapshot(self):
+        options = gInitialOptions['shaderSpaceUvSnapshotOptionIntOptVars']
+        save_path = gInitialOptions[
+            'shaderSpaceToolsPathStrOptVars'][0].replace('\\', '/')
+        ext = self.uvsnapshot_ext_set[options[0]]
+        res = self.resolutions[options[1]]
+        color = self.uvsnapshot_col_map[options[2]]
+        uvSnapshot(save_path, ext, res, color, options[3])
+
+    def _export_polygons(self):
+        options = gInitialOptions['shaderSpacePolygonExportOptionIntOptVars']
+        save_path = gInitialOptions[
+            'shaderSpaceToolsPathStrOptVars'][1].replace('\\', '/')
+        words = gInitialOptions['shaderSpacePolygonExportOptionStrOptVars']
+        save_type = self.export_poly_type[options[0]]
+        exportPolygons(save_path, save_type, words[0], words[1], options[1])
+
+    def _photoshop_file_create(self):
+        save_path = gInitialOptions[
+            'shaderSpaceToolsPathStrOptVars'][2].replace('\\', '/')
+        if save_path[-1] != '/':
+            save_path = save_path + '/'
+        obtain_uv_path = gInitialOptions[
+            'shaderSpaceToolsPathStrOptVars'][4].replace('\\', '/')
+        if obtain_uv_path[-1] != '/':
+            obtain_uv_path = obtain_uv_path + '/'
+        check_channels = gInitialOptions['shaderSpaceChannelsIntOptVars']
+        channel_abbrs = gInitialOptions['shaderSpaceAbbreviationsStrOptVars']
+        resolution = self.resolutions[
+            gInitialOptions['shaderSpacePhotoshopOptionIntOptVars'][0]]
+        photoshop_names = gInitialOptions[
+            'shaderSpacePhotoshopNamesStrOptVars'][0].split(',')
+        uv_image_names = gInitialOptions[
+            'shaderSpacePhotoshopNamesStrOptVars'][1].split(',')
+        channels = [c for idx, c in enumerate(channel_abbrs)
+            if check_channels[idx]]
+        for index, name in enumerate(photoshop_names):
+            uv_image = ''
+            if index < len(uv_image_names):
+                uv_image = obtain_uv_path + uv_image_names[index]
+            if not name.endswith('.psd'):
+                name = name + '.psd'
+            createPhotoshopFile(save_path+name, uv_image, channels, resolution)
+
+    def _export_shaders(self):
+        save_path = gInitialOptions['shaderSpaceToolsPathStrOptVars'][3]
+        method = self.selected_or_all[
+            gInitialOptions['shaderSpaceShaderExportIntOptVars'][0]]
+        exportShaders(save_path, method)
+
 class ShaderSpaceSettingWin(QtGui.QWidget):
     sender = QtCore.Signal(str, int, str)
-    vaildNode = QtCore.QRegExp(
-        '\\D(<asset>|<shader>|<user>|<version>|<channel>|\\w)*')
-    vaildNodeWithoutChannel = QtCore.QRegExp(
-        '\\D(<asset>|<shader>|<user>|<version>|\\w)*')
     def __init__(self, parent=None):
         super(ShaderSpaceSettingWin, self).__init__(parent)
         self.initUI()
@@ -600,7 +823,7 @@ class ShaderSpaceSettingWin(QtGui.QWidget):
         self.setLayout(layout)
         groupBox.setToolTip('<asset> Asset Name\n<shader> Shader Name\
             \n<user> User Name\n<version> Version\
-            \n<channel> Channel Abbreviations')
+            \n<channel> Channel Abbreviations(texture and p2d only)')
         groupBox.setLayout(layout)
         # Connect
         shaderLe.textEdited.connect(
@@ -660,7 +883,7 @@ class ShaderSpaceSettingWin(QtGui.QWidget):
                         QtGui.QLabel(kChannelList[index]), col, row)
                 else:
                     field = QtGui.QLineEdit(abbreviations[index])
-                    field.setValidator(gValidMayaNode)
+                    field.setValidator(gLegalMayaNodeName)
                     field.setMaximumWidth(80)
                     field.textEdited.connect(
                         lambda text, index=index: self.sender.emit(
@@ -669,3 +892,41 @@ class ShaderSpaceSettingWin(QtGui.QWidget):
                     layout.addWidget(field, col, row)
         group.setLayout(layout)
         return group
+
+class AboutDialog(QtGui.QDialog):
+    def __init__(self, parent=getMayaMainWin()):
+        super(AboutDialog, self).__init__(parent)
+        self.setWindowTitle('About Shader Space')
+        self.initUI()
+
+    def initUI(self):
+        layout = QtGui.QVBoxLayout()
+        contexts = ('Shader Space - Rapid build shader tool',
+                    'Author : Chia Xin Lin',
+                    'Version : '+kVersion,
+                    'Last Update :'+kLastUpdate,
+                    'E-Mail : nnnight@gmail.com',
+                    'Github : http://github.com/chiaxin')
+        for context in contexts:
+            layout.addWidget(QtGui.QLabel(context))
+        close_button = QtGui.QPushButton('OK')
+        layout.addWidget(close_button)
+        self.setLayout(layout)
+        # Connect
+        close_button.clicked.connect(self.close)
+
+class HelpDialog(QtGui.QDialog):
+    def __init__(self, parent=getMayaMainWin()):
+        super(HelpDialog, self).__init__(parent)
+        self.setWindowTitle('Help')
+        self.initUI()
+
+    def initUI(self):
+        layout = QtGui.QVBoxLayout()
+        layout.addWidget(QtGui.QLabel('Help'))
+        close_button = QtGui.QPushButton('OK')
+        layout.addWidget(close_button)
+        self.setLayout(layout)
+        # Connect
+        close_button.clicked.connect(self.close)
+

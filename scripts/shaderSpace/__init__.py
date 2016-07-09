@@ -10,8 +10,10 @@ Github : http://github.com/chiaxin
 from UI import ShaderSpaceMainWin
 
 try:
-    shaderSpaceMainWin.close()
+    shaderSpaceMainUI.close()
+    shaderSpaceMainUI.show()
 except:
+    shaderSpaceMainUI = ShaderSpaceMainWin()
+    shaderSpaceMainUI.show()
+finally:
     pass
-shaderSpaceMainWin = ShaderSpaceMainWin()
-shaderSpaceMainWin.show()

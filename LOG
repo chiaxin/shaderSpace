@@ -75,3 +75,6 @@ ver 0.4.33 : May/ 25/ 2016
 
 ver 0.4.34 : May/ 26/ 2016
     1. Add log switcher
+================================================================
+ver 0.5.04 : Jul/ 09/ 2016
+    1. New feature for shaderSpace tool, using PySide
