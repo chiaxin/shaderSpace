@@ -18,6 +18,7 @@ from functools import partial
 from math import ceil
 import maya.cmds as mc
 import maya.OpenMayaUI as omui
+from pymel.all import optionVar
 from config import *
 from core import createShader
 from tools import uvSnapshot, exportPolygons
@@ -33,6 +34,7 @@ for optVar in kDefaultMappings.keys():
     else:
         buff = mc.optionVar(q=optVar)
         if type(buff) != type(kDefaultMappings[optVar]):
+            print '# OptionVar NOT MATCH :', optVar
             gInitialOptions[optVar] = copy.deepcopy(kDefaultMappings[optVar])
         elif isinstance(kDefaultMappings[optVar], list) \
         and len(buff) != len(kDefaultMappings[optVar]):
@@ -65,7 +67,10 @@ def updateOptions(optVar, index, value):
         elif optVar.endswith('StrOptVar'):
             gInitialOptions[optVar] = value
         elif optVar.endswith('IntOptVar'):
-            gInitialOptions[optVar] = int(value)
+            if value in ('True', 'False'):
+                gInitialOptions[optVar] = int(value == 'True')
+            else:
+                gInitialOptions[optVar] = int(value)
         elif optVar.endswith('IntOptVars'):
             buff = gInitialOptions[optVar]
             buff[index] = int(value)
@@ -74,12 +79,12 @@ def updateOptions(optVar, index, value):
     except:
         raise
 
-def getMayaMainWin():
+def _getMayaMainWin():
     '''Get Maya main window using OpenMayaUI.MQtUtil'''
     pointer = omui.MQtUtil.mainWindow()
     return wrapInstance(long(pointer), QtGui.QWidget)
 
-def shaderGenerate():
+def _shaderGenerate():
     global gInitialOptions, gShaderPreset
     shader, shadingGroup = \
     createShader(preset=gShaderPreset, **gInitialOptions)
@@ -88,38 +93,63 @@ def shaderGenerate():
 
 class ShaderSpaceMainWin(QtGui.QMainWindow):
     '''Shader Space Main Window'''
-    def __init__(self, parent=getMayaMainWin()):
+    sender = QtCore.Signal(str, int, str)
+    def __init__(self, parent=_getMayaMainWin()):
         super(ShaderSpaceMainWin, self).__init__(parent)
+        self.sender.connect(updateOptions)
+        # Set title
         self.setWindowTitle('Shader Space v'+kVersion)
+        # Set title icon
+        icon = mc.internalVar(userBitmapsDir=True)+'shaderSpace.png'
+        if isfile(icon):
+            self.setWindowIcon(QtGui.QIcon(icon))
+        # Initial
+        self.centralWin = ShaderSpaceCentral()
+        self.setCentralWidget(self.centralWin)
+        self.resize(self.minimumSizeHint())
         # Actions
-        save_action = QtGui.QAction('&Save', self)
-        load_action = QtGui.QAction('&Load', self)
+        save_action = QtGui.QAction('&Save Settings', self)
+        load_action = QtGui.QAction('&Load Settings', self)
+        reset_action = QtGui.QAction('&Reset Settings', self)
+        lock_action = QtGui.QAction('&Lock Settings', self, checkable=True)
         help_action = QtGui.QAction('&Help', self)
         about_action= QtGui.QAction('&About', self)
+        # Menus
         file_menu = self.menuBar().addMenu('&File')
         help_menu = self.menuBar().addMenu('&Help')
         file_menu.addAction(save_action)
         file_menu.addAction(load_action)
-        # No implement, set disable
-        file_menu.setEnabled(False)
+        file_menu.addAction(reset_action)
+        file_menu.addAction(lock_action)
         help_menu.addAction(help_action)
         help_menu.addAction(about_action)
+        # Set actions
+        withLocked = bool(
+            gInitialOptions['shaderSpaceSettingsLockedIntOptVar'])
+        lock_action.setChecked(withLocked)
+        if withLocked:
+            self._lockSettings(True)
         # Connect
         save_action.triggered.connect(self._dumpSave)
         load_action.triggered.connect(self._dumpLoad)
+        reset_action.triggered.connect(self._resetSettings)
         help_action.triggered.connect(self._help)
         about_action.triggered.connect(self._about)
-        # Initial
-        self.initUI()
-
-    def initUI(self):
-        centralWidget = ShaderSpaceCentral()
-        self.setCentralWidget(centralWidget)
-        self.resize(self.minimumSizeHint())
+        lock_action.toggled.connect(self._lockSettings)
+        lock_action.toggled.connect(
+            lambda state: self.sender.emit(
+                'shaderSpaceSettingsLockedIntOptVar', 0, str(state)))
 
     def closeEvent(self, event):
-        self.storeOptionVars()
+        self._saveOptionVars()
         event.accept()
+
+    def _lockSettings(self, triggered):
+        settingsWidget = self.centralWin.tab.widget(1)
+        if triggered:
+            settingsWidget.setEnabled(False)
+        else:
+            settingsWidget.setEnabled(True)
 
     def _help(self):
         dialog = HelpDialog()
@@ -129,41 +159,84 @@ class ShaderSpaceMainWin(QtGui.QMainWindow):
         dialog = AboutDialog()
         dialog.show()
 
-    def storeOptionVars(self):
+    def _saveOptionVars(self):
         global gInitialOptions
-        from pymel.all import optionVar
         for var, value in gInitialOptions.items():
             optionVar[var] = value
 
+    def _resetSettings(self):
+        msgbox = QtGui.QMessageBox()
+        msgbox.setText('<h3>The settings has been reset.</h3>')
+        msgbox.setInformativeText('Do you want to reset?')
+        msgbox.setStandardButtons(
+            QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
+        msgbox.setDefaultButton(QtGui.QMessageBox.Cancel)
+        ret = msgbox.exec_()
+        if ret == QtGui.QMessageBox.Cancel:
+            return
+        gInitialOptions['shaderSpaceNodeNameRuleStrOptVars'] = \
+            copy.deepcopy(
+                kDefaultMappings['shaderSpaceNodeNameRuleStrOptVars'])
+        gInitialOptions['shaderSpaceAutoPathRuleStrOptVar'] = \
+            copy.deepcopy(
+                kDefaultMappings['shaderSpaceAutoPathRuleStrOptVar'])
+        gInitialOptions['shaderSpaceAbbreviationsStrOptVars'] = \
+            copy.deepcopy(
+                kDefaultMappings['shaderSpaceAbbreviationsStrOptVars'])
+        self._reloadWidget(1)
+
+    def _reloadWidget(self, idx):
+        withEnabled = self.centralWin.tab.widget(idx).isEnabled()
+        self.centralWin.resetSettingWidget()
+        self.centralWin.tab.widget(idx).setEnabled(withEnabled)
+
     def _dumpSave(self):
+        global gInitialOptions
         data_file, fl = QtGui.QFileDialog.getSaveFileName(
-            self, 'Save shader space options',
-            'D:/TEMP', 'spk (*.spk)')
+            self, 'Save settings',
+            mc.workspace(q=True, rootDirectory=True), 'spk (*.spk)')
         if not data_file:
             return
-        abbreviations_data = \
-            gInitialOptions['shaderSpaceAbbreviationsStrOptVars']
+        dumpDataSet = []
+        dumpDataSet.append(
+            gInitialOptions['shaderSpaceNodeNameRuleStrOptVars'])
+        dumpDataSet.append(
+            gInitialOptions['shaderSpaceAutoPathRuleStrOptVar'])
+        dumpDataSet.append(
+            gInitialOptions['shaderSpaceAbbreviationsStrOptVars'])
         try:
             io_file = open(data_file, 'wb')
-            pickle.dump(abbreviations_data, io_file)
         except:
             raise
+        else:
+            for dumpData in dumpDataSet:
+                pickle.dump(dumpDataSet, io_file)
         finally:
             io_file.close()
 
     def _dumpLoad(self):
+        global gInitialOptions
         data_file, fl = QtGui.QFileDialog.getOpenFileName(
-            self, 'Load shader space options',
-            'D:/TEMP', 'spk (*.spk)')
+            self, 'Load settings',
+            mc.workspace(q=True, rootDirectory=True), 'spk (*.spk)')
         if not data_file:
             return
         try:
             io_file = open(data_file, 'rb')
-            data_buff = pickle.load(io_file)
+            dump_buff = pickle.load(io_file)
+            nodeNameRuleBuff = dump_buff[0]
+            autoPathRuleBuff = dump_buff[1]
+            abbreviationsBuff = dump_buff[2]
         except:
             raise
         else:
-            pass
+            gInitialOptions['shaderSpaceNodeNameRuleStrOptVars'] = \
+                nodeNameRuleBuff
+            gInitialOptions['shaderSpaceAutoPathRuleStrOptVar'] = \
+                autoPathRuleBuff
+            gInitialOptions['shaderSpaceAbbreviationsStrOptVars'] = \
+                abbreviationsBuff
+            self._reloadWidget(1)
         finally:
             io_file.close()
 
@@ -175,24 +248,31 @@ class ShaderSpaceCentral(QtGui.QWidget):
 
     def initUI(self):
         # Widgets
-        createWidget = ShaderSpaceCreateWin()
-        toolsWidget = ShaderSpaceToolsWin()
-        settingWidget = ShaderSpaceSettingWin()
+        self.createWidget = ShaderSpaceCreateWin()
+        self.settingWidget = ShaderSpaceSettingWin()
+        self.toolsWidget = ShaderSpaceToolsWin()
         # Tab
-        tab = QtGui.QTabWidget()
-        tab.addTab(createWidget, 'Creation')
-        tab.addTab(settingWidget, 'Settings')
-        tab.addTab(toolsWidget, 'Tools')
+        self.tab = QtGui.QTabWidget()
+        self.tab.addTab(self.createWidget, 'Creation')
+        self.tab.addTab(self.settingWidget, 'Settings')
+        self.tab.addTab(self.toolsWidget, 'Tools')
         # Layouts
         layout = QtGui.QVBoxLayout()
-        layout.addWidget(tab)
+        layout.addWidget(self.tab)
         self.setLayout(layout)
+
+    def resetSettingWidget(self):
+        self.tab.removeTab(1)
+        self.settingWidget.deleteLater()
+        self.settingWidget = ShaderSpaceSettingWin()
+        self.tab.insertTab(1, self.settingWidget, 'Settings')
+        self.tab.setCurrentIndex(1)
 
 class ShaderSpaceCreateWin(QtGui.QWidget):
     '''Shader Space Creation Page'''
     # Signal object
     sender = QtCore.Signal(str, int, str)
-    presets_dir = mc.internalVar(ups=True)+'attrPresets/'
+    _presetsDir = mc.internalVar(ups=True)+'attrPresets/'
     def __init__(self, parent=None):
         super(ShaderSpaceCreateWin, self).__init__(parent)
         self.initUI()
@@ -221,6 +301,11 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
         userLe.setMinimumHeight(24)
         versionLe = QtGui.QLineEdit(names[3])
         versionLe.setMinimumHeight(24)
+        # Tip
+        assetLe.setToolTip('This field will replaced by <asset> variable')
+        shaderLe.setToolTip('This field will replaced by <shader> variable')
+        userLe.setToolTip('This field will replaced by <user> variable')
+        versionLe.setToolTip('This field will replaced by <version> variable')
         # Set validator
         assetLe.setValidator(gLegalMayaNodeName)
         shaderLe.setValidator(gLegalMayaNodeName)
@@ -262,8 +347,9 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
         global kChannelList, gInitialOptions
         checks = copy.deepcopy(
             gInitialOptions['shaderSpaceChannelsIntOptVars'])
-        numOfChannels = len(kChannelList)
         grid = QtGui.QGridLayout()
+        # Counter grid array number
+        numOfChannels = len(kChannelList)
         total_col = int(ceil(float(numOfChannels) / 3))
         for col in range(total_col):
             for row in range(3):
@@ -328,6 +414,12 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
         sP2dCbb.currentIndexChanged.connect(
             lambda idx: self.sender.emit('shaderSpaceOptionIntOptVars',
                 4, str(idx)))
+        # Tip
+        assignCbb.setToolTip('Assign shader for objects after create')
+        gcCbb.setToolTip('Make color management in texture')
+        afpCbb.setToolTip('Auto fill texture path name when create')
+        mUvCbb.setToolTip('Toggle mirror UV parameter in place2dTexture')
+        sP2dCbb.setToolTip('The place2dTexture node is only one or multiple')
         # Layout
         layout = QtGui.QVBoxLayout()
         layout.addWidget(assignCbb)
@@ -344,21 +436,26 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
         global gInitialOptions
         bvValidator = QtGui.QRegExpValidator(
             QtCore.QRegExp(r'(0|1)\.\d{1,3}'))
-        filter_index = gInitialOptions['shaderSpaceFilterTypeIntOptVar']
-        bump_value = gInitialOptions['shaderSpaceBumpValueFloatOptVar']
+        filterIndex = gInitialOptions['shaderSpaceFilterTypeIntOptVar']
+        bumpValue = gInitialOptions['shaderSpaceBumpValueFloatOptVar']
         # Component
-        bumpValueLe = QtGui.QLineEdit(str(bump_value))
+        bumpValueLe = QtGui.QLineEdit(str(bumpValue))
         bumpValueLe.setMaximumWidth(60)
         bumpValueLe.setValidator(bvValidator)
         filterCbb = QtGui.QComboBox()
         filterCbb.addItems(
             ('off', 'Mipmap', 'Box', 'Quadratic', 'Quartic', 'Gaussian'))
-        filterCbb.setCurrentIndex(filter_index)
+        filterCbb.setCurrentIndex(filterIndex)
         ailCb = QtGui.QCheckBox()
         ail_state = QtCore.Qt.CheckState.Unchecked
         if gInitialOptions['shaderSpaceAlphaIsLuminanceIntOptVar']:
             ail_state = QtCore.Qt.CheckState.Checked
         ailCb.setCheckState(ail_state)
+        # Tip
+        bumpValueLe.setToolTip('Set bump value')
+        filterCbb.setToolTip('Set texture\'s filter type')
+        ailCb.setToolTip(
+            'If on, texture node\'s alphaIsLuminance will be on if outAlpha')
         # Layout
         groupBox = QtGui.QGroupBox('Values')
         groupBox.setAlignment(QtCore.Qt.AlignCenter)
@@ -396,6 +493,10 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
                 'shaderSpaceShaderIntOptVar', 0, str(idx)))
         self.presetCbb = QtGui.QComboBox()
         self._resetPresets(kShadersList[shader_index])
+        # Tip
+        shadersCbb.setToolTip('Select a shader you want to create')
+        self.presetCbb.setToolTip(
+            'Select a preset you want to assign after create')
         # Layout
         groupBox = QtGui.QGroupBox('Shaders')
         groupBox.setAlignment(QtCore.Qt.AlignCenter)
@@ -410,6 +511,36 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
             lambda shaderType: self._resetPresets(shaderType))
         self.presetCbb.activated[str].connect(
             lambda preset: self._updatePreset(preset))
+        # Component for up to Maya 2015
+        if kMayaVersion in ('2015', '2016'):
+            nameBuff = \
+            gInitialOptions['shaderSpaceColorProfileNameStrOptVars']
+            sRgbColorSpaceName = nameBuff[0]
+            linearColorSpaceName = nameBuff[1]
+            sRgbColorSpaceCbb = QtGui.QComboBox()
+            linearColorSpaceCbb = QtGui.QComboBox()
+            cmPrefs = mc.colorManagementPrefs(q=True, inputSpaceNames=True)
+            sRgbColorSpaceCbb.addItems(cmPrefs)
+            linearColorSpaceCbb.addItems(cmPrefs)
+            idx = sRgbColorSpaceCbb.findText(
+                sRgbColorSpaceName, QtCore.Qt.MatchFixedString)
+            if idx >= 0:
+                sRgbColorSpaceCbb.setCurrentIndex(idx)
+            idx = linearColorSpaceCbb.findText(
+                linearColorSpaceName, QtCore.Qt.MatchFixedString)
+            if idx >= 0:
+                linearColorSpaceCbb.setCurrentIndex(idx)
+            # connect
+            sRgbColorSpaceCbb.activated[str].connect(
+                lambda name: self.sender.emit(
+                    'shaderSpaceColorProfileNameStrOptVars', 0, name))
+            linearColorSpaceCbb.activated[str].connect(
+                lambda name: self.sender.emit(
+                    'shaderSpaceColorProfileNameStrOptVars', 1, name))
+            grid.addWidget(QtGui.QLabel('sRGB Color-Space'), 2, 0)
+            grid.addWidget(sRgbColorSpaceCbb, 2, 1)
+            grid.addWidget(QtGui.QLabel('Linear Color-Space'), 3, 0)
+            grid.addWidget(linearColorSpaceCbb, 3, 1)
         return groupBox
 
     def buildExecuteButtons(self):
@@ -423,7 +554,7 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
         frame = QtGui.QFrame()
         frame.setLayout(layout)
         # Connect
-        self.createShaderButton.clicked.connect(shaderGenerate)
+        self.createShaderButton.clicked.connect(_shaderGenerate)
         return frame
 
     def _checkEmpty(self, context):
@@ -439,7 +570,7 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
     def _resetPresets(self, shaderType):
         self.presetCbb.clear()
         self.presetCbb.addItem('No Preset')
-        search_dir = self.presets_dir+'/'+shaderType
+        search_dir = self._presetsDir+'/'+shaderType
         if not isdir(search_dir):
             return []
         presets_set = []
@@ -753,7 +884,7 @@ class ShaderSpaceToolsWin(QtGui.QWidget):
             save_path = save_path + '/'
         obtain_uv_path = gInitialOptions[
             'shaderSpaceToolsPathStrOptVars'][4].replace('\\', '/')
-        if obtain_uv_path[-1] != '/':
+        if obtain_uv_path and obtain_uv_path[-1] != '/':
             obtain_uv_path = obtain_uv_path + '/'
         check_channels = gInitialOptions['shaderSpaceChannelsIntOptVars']
         channel_abbrs = gInitialOptions['shaderSpaceAbbreviationsStrOptVars']
@@ -788,12 +919,15 @@ class ShaderSpaceSettingWin(QtGui.QWidget):
     def initUI(self):
         self.sender.connect(updateOptions)
         layout = QtGui.QVBoxLayout()
-        layout.addWidget(self.nodes())
-        layout.addWidget(self.rule())
-        layout.addWidget(self.abbreviation())
+        self.nodes = self._buildNodes()
+        self.rules = self._buildRules()
+        self.abbreviations = self._buildAbbreviations()
+        layout.addWidget(self.nodes)
+        layout.addWidget(self.rules)
+        layout.addWidget(self.abbreviations)
         self.setLayout(layout)
 
-    def nodes(self):
+    def _buildNodes(self):
         global gInitialOptions
         rules = copy.deepcopy(
             gInitialOptions['shaderSpaceNodeNameRuleStrOptVars'])
@@ -846,11 +980,11 @@ class ShaderSpaceSettingWin(QtGui.QWidget):
                 5, text))
         return groupBox
 
-    def rule(self):
+    def _buildRules(self):
         global gInitialOptions
-        rule = gInitialOptions['shaderSpaceAutoPathRuleStrOptVar']
+        _buildRules = gInitialOptions['shaderSpaceAutoPathRuleStrOptVar']
         # Component
-        texPathRuleLe = QtGui.QLineEdit(rule)
+        texPathRuleLe = QtGui.QLineEdit(_buildRules)
         # Layout
         layout= QtGui.QHBoxLayout()
         layout.addWidget(QtGui.QLabel('Texture Path Rule'))
@@ -867,7 +1001,7 @@ class ShaderSpaceSettingWin(QtGui.QWidget):
                 0, text))
         return groupBox
 
-    def abbreviation(self):
+    def _buildAbbreviations(self):
         global kChannelList, gInitialOptions
         abbreviations = copy.deepcopy(
             gInitialOptions['shaderSpaceAbbreviationsStrOptVars'])
@@ -894,9 +1028,9 @@ class ShaderSpaceSettingWin(QtGui.QWidget):
         return group
 
 class AboutDialog(QtGui.QDialog):
-    def __init__(self, parent=getMayaMainWin()):
+    def __init__(self, parent=_getMayaMainWin()):
         super(AboutDialog, self).__init__(parent)
-        self.setWindowTitle('About Shader Space')
+        self.setWindowTitle('Shader Space')
         self.initUI()
 
     def initUI(self):
@@ -916,7 +1050,7 @@ class AboutDialog(QtGui.QDialog):
         close_button.clicked.connect(self.close)
 
 class HelpDialog(QtGui.QDialog):
-    def __init__(self, parent=getMayaMainWin()):
+    def __init__(self, parent=_getMayaMainWin()):
         super(HelpDialog, self).__init__(parent)
         self.setWindowTitle('Help')
         self.initUI()

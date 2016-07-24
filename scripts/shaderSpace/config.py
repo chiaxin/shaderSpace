@@ -9,13 +9,14 @@ import maya.cmds
 
 kMayaVersion= maya.cmds.about(v=True)
 kCurrentOS  = maya.cmds.about(os=True)
-kLinearProfile = 'scene-linear Rec 709/sRGB'
+kSRgbProfile = u'sRGB'
+kLinearProfile = u'scene-linear Rec 709/sRGB'
 
 # Vray color space - 0: linear, 1: Gamma, 2: sRGB
 kVrayDegammaMethod = 1
 kVrayDegammaValue = 2.2
-kVersion = '0.5.04'
-kLastUpdate = 'Jul, 09, 2016'
+kVersion = '0.5.05'
+kLastUpdate = 'Jul, 23, 2016'
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
 # List shaders supported
@@ -101,26 +102,39 @@ kRelatives = {  'blinn':(
                 ('outColor', 'opacityMap'))
 }
 kDefaultMappings={
-    'shaderSpaceNameStrOptVars':['asset', 'shader', 'user', 'v01'],
+    'shaderSpaceNameStrOptVars':[u'asset', u'shader', u'user', u'v01'],
     'shaderSpaceChannelsIntOptVars':[2, 0, 0, 2, 0, 2, 0, 0, 0, 2, 0, 0],
     'shaderSpaceShaderIntOptVar':0,
     'shaderSpaceOptionIntOptVars':[1, 0, 1, 0, 0],
     'shaderSpaceBumpValueFloatOptVar':0.1,
     'shaderSpaceAlphaIsLuminanceIntOptVar':2,
     'shaderSpaceFilterTypeIntOptVar':1,
-    'shaderSpaceAbbreviationsStrOptVars':['col', 'dif', 'rough',
-    'rfl', 'spc', 'gls', 'trs', 'rfc', 'rfg', 'bmp', 'inc', 'opc'],
+    'shaderSpaceAbbreviationsStrOptVars':[
+                                        u'col',
+                                        u'dif',
+                                        u'rough',
+                                        u'rfl',
+                                        u'spc',
+                                        u'gls',
+                                        u'trs',
+                                        u'refraCo',
+                                        u'refraGls',
+                                        u'bmp',
+                                        u'inc',
+                                        u'opc'],
     'shaderSpaceAutoPathRuleStrOptVar'\
-    :'<root>/sourceimages/<asset>/<asset>_<shader>_<channel>_<version>.tga',
+    :u'<root>/sourceimages/<asset>/<asset>_<shader>_<channel>_<version>.tga',
     'shaderSpaceNodeNameRuleStrOptVars'\
-    :['<asset>_<shader>_SD', '<asset>_<shader>_SG',\
-    '<asset>_<shader>_<channel>', '<asset>_<shader>_bmp2d', \
-    '<asset>_<shader>_place2dTexture', '<asset>_<shader>_materialInfo'],
-    'shaderSpaceToolsPathStrOptVars':['', '', '', '', ''],
+    :[u'<asset>_<shader>_SD', u'<asset>_<shader>_SG',\
+    u'<asset>_<shader>_<channel>', u'<asset>_<shader>_bmp2d', \
+    u'<asset>_<shader>_place2dTexture', u'<asset>_<shader>_materialInfo'],
+    'shaderSpaceToolsPathStrOptVars':[u'', u'', u'', u'', u''],
     'shaderSpaceUvSnapshotOptionIntOptVars':[0, 1, 1, 0],
-    'shaderSpacePhotoshopNamesStrOptVars':['', ''],
-    'shaderSpacePhotoshopOptionIntOptVars':[1],
-    'shaderSpaceShaderExportIntOptVars':[0],
+    'shaderSpacePhotoshopNamesStrOptVars':[u'', u''],
+    'shaderSpacePhotoshopOptionIntOptVars':[1, 0],
+    'shaderSpaceShaderExportIntOptVars':[0, 0],
     'shaderSpacePolygonExportOptionIntOptVars':[0, 0],
-    'shaderSpacePolygonExportOptionStrOptVars':['', '']
+    'shaderSpacePolygonExportOptionStrOptVars':[u'', u''],
+    'shaderSpaceSettingsLockedIntOptVar': 0,
+    'shaderSpaceColorProfileNameStrOptVars': [kSRgbProfile, kLinearProfile]
     }

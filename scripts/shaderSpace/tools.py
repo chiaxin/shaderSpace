@@ -6,9 +6,7 @@ E-Mail : nnnight@gmail.com
 Github : http://github.com/chiaxin
 '''
 from os import listdir
-from os.path import isfile, join
-from os.path import exists, join
-from os.path import dirname, join
+from os.path import isfile, dirname, exists
 import maya.cmds as mc
 import maya.mel as mel
 
@@ -202,7 +200,7 @@ def createPhotoshopFile(export_path, uv_path, channels, res):
         return
     execution = 'psdTextureFile -uvt true -psf \"{0}\" '.format(export_path)
     execution += '-xr {0} -yr {1} '.format(str(res), str(res))
-    if exists(uv_path):
+    if isfile(uv_path):
         execution += '-ssi \"{0}\" '.format(uv_path)
         print('UV image found :' + uv_path)
     else:
