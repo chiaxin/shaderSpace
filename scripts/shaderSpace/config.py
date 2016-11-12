@@ -124,8 +124,8 @@ kDefaultMappings={
                                         u'spc',
                                         u'gls',
                                         u'trs',
-                                        u'refraCo',
-                                        u'refraGls',
+                                        u'rrCol',
+                                        u'rrGls',
                                         u'bmp',
                                         u'inc',
                                         u'opc'],
@@ -145,15 +145,19 @@ kDefaultMappings={
     'shaderSpaceColorProfileNameStrOptVars': [kSRgbProfile, kLinearProfile]
     }
 
+kHelpInfo = ('Please check out shaderSpace_intro pdf document', )
+
 kAboutInfo = ('Shader Space : Create Shader Toolset in Maya',
               '--------------------------------------------',
-              'Support Maya version : 2014, 2015, 2016'
+              'Support Maya version : 2014, 2015, 2016',
               'Support Shader : ' + ', '.join(kShadersList),
               'Author : Chia Xin Lin',
               'Current Version : ' + kVersion,
               'Last Update : ' + kLastUpdate,
-              'Contact me --- ',
-              'E-Mail : nnnight@gmail.com',
-              'Github : http://github.com/chiaxin',
-              'Blogger : http://cgdeparture.blogspot.tw',
+              'License : MIT ',
+              '\n Contact me \n',
+              'E-Mail : \n\t nnnight@gmail.com',
+              'Github : \n\t http://github.com/chiaxin',
+              'Blogger : \n\t http://cgdeparture.blogspot.tw',
+              '\n'
               'If you have any question or suggestions, please feel free to contact me. Thanks')

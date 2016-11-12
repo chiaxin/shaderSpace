@@ -387,9 +387,8 @@ class ShaderSpaceCentral(QtGui.QWidget):
     def helpPage(self):
         self.helpWin = QtGui.QWidget()
         layout = QtGui.QVBoxLayout()
-        lines = ('Help', )
-        for l in lines:
-            layout.addWidget(QtGui.QLabel('<h3>' + l + '</h3>'))
+        for line in kHelpInfo:
+            layout.addWidget(QtGui.QLabel('<h3>' + line + '</h3>'))
         self.helpWin.setLayout(layout)
         return self.helpWin
 
@@ -774,7 +773,7 @@ class ShaderSpaceMeshExportWin(QtGui.QWidget):
     sender = QtCore.Signal(str, int, str)
     global _PRESERVE
     DATA_TYPE = ('Maya Ascii', 'Maya Binary', 'OBJ')
-    MODES = ('Visible Display Layers', 'Sets', 'Selected')
+    MODES = ('Visible Display Layers', 'Sets', 'From selected')
     def __init__(self, parent=None):
         super(ShaderSpaceMeshExportWin, self).__init__(parent)
         self.sender.connect(_updateOptionVarsSlot)

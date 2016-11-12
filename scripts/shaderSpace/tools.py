@@ -113,7 +113,7 @@ def exportPolygons(export_path, export_type, exclude, include, source):
     elif source == 2:
         selections = mc.ls(sl=True, l=True)
         if selections:
-            pairs_mesh = {'export_mesh', selections}
+            pairs_mesh = {'export_mesh': selections}
         else:
             mc.warning('# Please select objects!')
             return -1
