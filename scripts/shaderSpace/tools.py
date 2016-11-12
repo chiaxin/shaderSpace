@@ -1,32 +1,37 @@
-'''
-Tools for shaderSpace Rapid Shader Workflow Tool in Maya
-///////////////////////////////////////////////////////////
-Made by Chia Xin Lin, Copyright (c) 2016 by Chia Xin Lin
-E-Mail : nnnight@gmail.com
-Github : http://github.com/chiaxin
-'''
+# -*- coding: utf-8 -*-
+# Tools for shaderSpace
+#
+# Made by Chia Xin Lin, Copyright (c) 2016 by Chia Xin Lin
+#
+# E-Mail : nnnight@gmail.com
+#
+# Github : http://github.com/chiaxin
+#
+# Licensed under MIT: https://opensource.org/licenses/MIT
+#
 from os import listdir
-from os.path import isfile, dirname, exists
+from os.path import isfile, isdir, dirname, exists
+from config import kChannelList
 import maya.cmds as mc
 import maya.mel as mel
 
 def exportShaders(export_path, mode):
     if not export_path:
         mc.warning('Please enter a output folder!')
-        return
+        return -1
     if not exists(export_path):
         mc.warning('Directory is not exists :'+export_path)
-        return
+        return -1
     shading_groups = []
-    if mode == 'All':
+    if mode == 0:
         shading_groups = [s for s in mc.ls(type='shadingEngine')
             if s not in ('initialParticleSE', 'initialShadingGroup')]
-    elif mode == 'Selected':
+    elif mode == 1:
         selections = mc.ls(sl=True)
         if not selections:
             mc.warning(
                 'Please select at least one shader or mesh, nurbsShapes.')
-            return
+            return -1
         for sel in selections:
             connected_sg = mc.listConnections(sel, s=False,
                 d=True, type='shadingEngine')
@@ -35,13 +40,13 @@ def exportShaders(export_path, mode):
             shading_groups.extend([s for s in connected_sg
                 if s not in ('initialParticleSE', 'initialShadingGroup')])
         shading_groups = list(set(shading_groups))
-    else: 
-        return
+    else:
+        return -1
     if not shading_groups:
         mc.warning('There are no any shaders can be export!')
-        return
+        return -1
     if not _userConfirm('Export Shaders', '\n'.join(shading_groups)):
-        return
+        return -1
     connections = []
     fullpath = ''
     amout = 0
@@ -51,7 +56,7 @@ def exportShaders(export_path, mode):
     for sg in shading_groups:
         if mc.progressWindow(q=True, isCancelled=True):
             break
-        fullpath = '{0}{1}.ma'.format(export_path, sg)
+        fullpath = '{0}{1}.ma'.format(export_path, sg.replace(':', '_'))
         connections = mc.listHistory(sg, allFuture=True, pruneDagObjects=True)
         mc.select(connections, replace=True, noExpand=True)
         try:
@@ -65,49 +70,62 @@ def exportShaders(export_path, mode):
         mc.select(cl=True)
     mc.progressWindow(endProgress=True)
 
-def exportPolygons(export_path, export_type, exclude, include, group):
+def exportPolygons(export_path, export_type, exclude, include, source):
     if not export_path:
         mc.warning('Please enter a output folder!')
-        return
+        return -1
     elif not exists(export_path):
         mc.warning('Directory is not exists : {0}'.format(export_path))
-        return
+        return -1
     objExportPlugin = mc.pluginInfo('objExport', query=True, loaded=True)
-    if export_type == 'obj' and not objExportPlugin:
+    if export_type == 'OBJ' and not objExportPlugin:
         load_plugins = mc.loadPlugin('objExport')
         if load_plugins[0] != 'objExport':
             mc.warning('obj export plugin load failed')
-            return
+            return -1
         else:
             print('Plugin loaded : obj export')
     export_info = {}
-    if export_type == 'obj':
+    if export_type == 'OBJ':
         export_info['typ'] = 'OBJexport'
         export_info['ext'] = 'obj'
         export_info['opt'] = \
             'group=0;ptgroups=0;materials=0;smoothing=1;normals=1'
-    elif export_type == 'ma':
+    elif export_type == 'Maya Ascii':
         export_info['typ'] = 'mayaAscii'
         export_info['ext'] = 'ma'
         export_info['opt'] = 'v=0;'
-    elif export_type == 'mb':
+    elif export_type == 'Maya Binary':
         export_info['typ'] = 'mayaBinary' 
         export_info['ext'] = 'mb'
         export_info['opt'] = 'v=0;'
+    elif export_type == 'FBX':
+        export_info['typ'] = 'fbx'
+        export_info['ext'] = 'fbx'
+        export_info['opt'] = ''
     else:
         mc.warning('Failed : Unknown export type : {0}'.format(export_type))
     pairs_mesh = {}
-    if group == 0:
+    if source == 0:
         pairs_mesh = _getPolygonFromDisplayLayers()
-    elif group == 1:
+    elif source == 1:
         pairs_mesh = _getPolygonsFromSets()
+    elif source == 2:
+        selections = mc.ls(sl=True, l=True)
+        if selections:
+            pairs_mesh = {'export_mesh', selections}
+        else:
+            mc.warning('# Please select objects!')
+            return -1
+    #
     if not pairs_mesh:
-        return
+        return -1
     if not _userConfirm('Export Meshes', '\n'.join(pairs_mesh.keys())):
-        return 
-    store_selections = mc.ls(sl=True)
+        return -1
+    store_selections = mc.ls(sl=True, l=True)
     amout = 0
     process_max = len(pairs_mesh)
+    # Progress Window
     mc.progressWindow(title='Export Shaders', progress=amout,
         status='Export start...', isInterruptable=True, max=process_max)
     for key in pairs_mesh.keys():
@@ -141,45 +159,74 @@ def exportPolygons(export_path, export_type, exclude, include, group):
     else:
         mc.select(cl=True)
 
-def uvSnapshot(export_path, ext, res, color, group):
+def uvSnapshot(export_path, ext, res, colorSymbol, source=0):
     if not export_path:
         mc.warning('Please enter a output folder!')
-        return
-    if not exists(export_path):
-        mc.warning('The directory is not exists : {0}'.format(export_path))
-        return
+        return -1
+    if not isdir(export_path):
+        mc.warning('The directory is invalid : {0}'.format(export_path))
+        return -1
     pairs_mesh = {}
-    if group == 0:
+    # Get source 0: from display layer, 1:from sets, 2:from selected
+    if source == 0:
         pairs_mesh = _getPolygonFromDisplayLayers()
-    elif group == 1:
+    elif source == 1:
         pairs_mesh = _getPolygonsFromSets()
+    elif source == 2:
+        selections = mc.ls(sl=True, l=True)
+        if selections:
+            pairs_mesh = {'uv_snapshot': selections}
+        else:
+            mc.warning('# Please select objects!')
+            return -1
     if not pairs_mesh:
         mc.warning('No any meshs can be snapshot')
-        return
+        return -1
     if not _userConfirm('UV Snapshot', '\n'.join(pairs_mesh.keys())):
         return
+    # Store previous selections
     store_selections = mc.ls(sl=True)
     amout = 0
     process_max = len(pairs_mesh)
+    # UV Snapshot Color
+    R, G, B = 0, 1, 2
+    if colorSymbol == 'Black':
+        color = (0, 0, 0)
+    elif colorSymbol == 'White':
+        color = (255, 255, 255)
+    elif colorSymbol == 'Red':
+        color = (255, 0, 0)
+    else:
+        color = (255, 255, 255)
+    # Progress Window
     mc.progressWindow(title='UV Snapshot', progress=amout,
         status='Snapshot start...', isInterruptable=True, max=process_max)
+    #
     for key in pairs_mesh.keys():
         mc.select(cl=True)
         fullpath = '{0}/{1}.{2}'.format(export_path, key , ext)
         try:
             mc.select(pairs_mesh[key], r=True)
-            mc.uvSnapshot(overwrite=True, \
-                redColor=color[0], greenColor=color[1], blueColor=color[2],
-                xResolution=int(res), yResolution=int(res), fileFormat=ext,
-                name=fullpath)
+            mc.uvSnapshot(overwrite=True,
+                          redColor=color[R],
+                          greenColor=color[G],
+                          blueColor=color[B],
+                          xResolution=int(res),
+                          yResolution=int(res),
+                          fileFormat=ext,
+                          antiAliased=True,
+                          name=fullpath)
             amout += 1
-            mc.progressWindow(e=True, progress=amout, 
-                status='Snapshot : {0} / {1}'.format(amout,  process_max))
+            mc.progressWindow(e=True,
+                              progress=amout,
+                              status='Snapshot : {0} / {1}'.format(
+                              amout,  process_max))
         except:
+            mc.progressWindow(endProgress=True)
             raise
-        finally:
-            mc.progressWindow(endProgress = True)
         print('UV Snapshot > '+fullpath)
+    # End the progress window
+    mc.progressWindow(endProgress=True)
     if store_selections:
         mc.select(store_selections, r=True)
     else:
@@ -187,33 +234,34 @@ def uvSnapshot(export_path, ext, res, color, group):
 
 def createPhotoshopFile(export_path, uv_path, channels, res):
     if not export_path:
-        mc.warning('Please enter a output folder!')
-        return
+        mc.warning('# Please enter a output folder!')
+        return -1
     if exists(export_path):
-        mc.warning('File is exists, Can not overwrite it : '+export_path)
-        return
-    elif not exists(dirname(export_path)):
-        mc.warning('Directory is not exists : {0}'.format(
-            dirname(export_path)))
-        return
+        mc.warning('# File is exists, Can not overwrite : '+export_path)
+        return -1
     if not _userConfirm('Photoshop file', 'Create {0} ?'.format(export_path)):
-        return
-    execution = 'psdTextureFile -uvt true -psf \"{0}\" '.format(export_path)
-    execution += '-xr {0} -yr {1} '.format(str(res), str(res))
+        return -1
+    command = 'psdTextureFile -uvt true -psf \"{0}\" '.format(export_path)
+    command += '-xr {0} -yr {1} '.format(str(res), str(res))
     if isfile(uv_path):
-        execution += '-ssi \"{0}\" '.format(uv_path)
-        print('UV image found :' + uv_path)
+        command += '-ssi \"{0}\" '.format(uv_path)
+        print('# UV image found :' + uv_path)
     else:
-        print('UV image file was not found.')
+        print('# UV image file was not found.')
+    # Add layers flags
     channels_line = ''
     for idx, ch in enumerate(channels):
-        channels_line += '-chs {0} {1} {2} '.format(ch, str(idx), 'false')
+        #channels_line += '-chs {0} {1} {2} '.format(ch, str(idx), 'true')
+        channels_line += '-chc {0} {1} 128 128 128 '.format(ch, str(idx))
     if channels_line:
-        execution += channels_line
+        command += channels_line
     try:
-        mel.eval(execution)
+        mel.eval(command)
     except:
+        print command
         raise
+    else:
+        print '# Photoshop file create successiful! : ', export_path
 
 def _userConfirm(title, message):
     ans = mc.confirmDialog(t=title, m=message, b=('Yes','No'), 

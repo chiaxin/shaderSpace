@@ -1,10 +1,14 @@
-'''
-    Configurations for shaderSpace Rapid Shader Workflow Tool in Maya
-
-    Made by Chia Xin Lin, Copyright (c) 2016 by Chia Xin Lin
-    E-Mail : nnnight@gmail.com
-    Github : http://github.com/chiaxin
-'''
+# -*- coding: utf-8 -*-
+# shaderSpace configuration
+#
+# Made by Chia Xin Lin, Copyright (c) 2016 by Chia Xin Lin
+#
+# E-Mail : nnnight@gmail.com
+#
+# Github : http://github.com/chiaxin
+#
+# Licensed under MIT: https://opensource.org/licenses/MIT
+#
 import maya.cmds
 
 kMayaVersion= maya.cmds.about(v=True)
@@ -15,12 +19,15 @@ kLinearProfile = u'scene-linear Rec 709/sRGB'
 # Vray color space - 0: linear, 1: Gamma, 2: sRGB
 kVrayDegammaMethod = 1
 kVrayDegammaValue = 2.2
-kVersion = '0.5.05'
-kLastUpdate = 'Jul, 23, 2016'
+kVersion = '1.0.02 release'
+kLastUpdate = 'Nov, 12, 2016'
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
 # List shaders supported
-kShadersList = ('blinn', 'mia_material_x_passes', 'aiStandard', 'VRayMtl')
+kShadersList = ('blinn',
+                'mia_material_x_passes',
+                'aiStandard',
+                'VRayMtl')
 kColorManagementShaders = ('blinn', 'mia_material_x_passes')
 kVrayColorMangementShaders = ('VRayMtl')
 kGeneralBumpMapMethod = ('blinn', 'aiStandard')
@@ -130,7 +137,6 @@ kDefaultMappings={
     u'<asset>_<shader>_place2dTexture', u'<asset>_<shader>_materialInfo'],
     'shaderSpaceToolsPathStrOptVars':[u'', u'', u'', u'', u''],
     'shaderSpaceUvSnapshotOptionIntOptVars':[0, 1, 1, 0],
-    'shaderSpacePhotoshopNamesStrOptVars':[u'', u''],
     'shaderSpacePhotoshopOptionIntOptVars':[1, 0],
     'shaderSpaceShaderExportIntOptVars':[0, 0],
     'shaderSpacePolygonExportOptionIntOptVars':[0, 0],
@@ -138,3 +144,16 @@ kDefaultMappings={
     'shaderSpaceSettingsLockedIntOptVar': 0,
     'shaderSpaceColorProfileNameStrOptVars': [kSRgbProfile, kLinearProfile]
     }
+
+kAboutInfo = ('Shader Space : Create Shader Toolset in Maya',
+              '--------------------------------------------',
+              'Support Maya version : 2014, 2015, 2016'
+              'Support Shader : ' + ', '.join(kShadersList),
+              'Author : Chia Xin Lin',
+              'Current Version : ' + kVersion,
+              'Last Update : ' + kLastUpdate,
+              'Contact me --- ',
+              'E-Mail : nnnight@gmail.com',
+              'Github : http://github.com/chiaxin',
+              'Blogger : http://cgdeparture.blogspot.tw',
+              'If you have any question or suggestions, please feel free to contact me. Thanks')
