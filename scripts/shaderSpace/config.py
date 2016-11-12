@@ -145,7 +145,7 @@ kDefaultMappings={
     'shaderSpaceColorProfileNameStrOptVars': [kSRgbProfile, kLinearProfile]
     }
 
-kHelpInfo = ('Please check out shaderSpace_intro pdf document', )
+kHelpInfo = ('Please check out shaderSpace_intro PDF document', )
 
 kAboutInfo = ('Shader Space : Create Shader Toolset in Maya',
               '--------------------------------------------',
