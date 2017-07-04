@@ -62,7 +62,7 @@ def _connectToPlace2dTexture(fileNode, p2dNode):
              ('vertexUvTwo', 'vertexUvTwo'),
              ('vertexUvThree', 'vertexUvThree'),
              ('vertexCameraOne', 'vertexCameraOne'),
-             ('outUV', 'uv'), 
+             ('outUV', 'uv'),
              ('outUvFilterSize', 'uvFilterSize'))
     for attr in pairs:
         mc.connectAttr((p2dNode+'.'+attr[0]),
