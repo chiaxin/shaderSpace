@@ -14,13 +14,15 @@ import maya.cmds
 kMayaVersion= maya.cmds.about(v=True)
 kCurrentOS  = maya.cmds.about(os=True)
 kSRgbProfile = u'sRGB'
-kLinearProfile = u'scene-linear Rec 709/sRGB'
+#kLinearProfile = u'scene-linear Rec 709/sRGB'
+# 2017-07-04 Linear profile default set to "Raw"
+kLinearProfile = u'Raw'
 
 # Vray color space - 0: linear, 1: Gamma, 2: sRGB
 kVrayDegammaMethod = 1
 kVrayDegammaValue = 2.2
-kVersion = '1.0.02 release'
-kLastUpdate = 'Nov, 12, 2016'
+kVersion = '1.0.03'
+kLastUpdate = 'July, 04, 2017'
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
 # List shaders supported

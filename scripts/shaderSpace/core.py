@@ -166,13 +166,32 @@ def createShader(*args, **kwargs):
     # Create and connect each channels
     newTextureList = []
     newTextureChannels = []
+    # 2017-07-04 : After Maya 2015 extension 1, create texture(file)
+    # need to use isColorManaged to plug color-management node.
+    # mc.about(iv=True) will return a string such as
+    # Autodesk Maya 2015 Extension 1 + SP6
+    # if upper than 2015 extension 1, add isColorManaged argument
+    create_texture_cmd = 'mc.shadingNode(\'file\', asTexture=True,'
+    install_version_string = mc.about(iv=True)
+    version_matcher = re.search(r'\d\d\d\d', install_version_string)
+    if version_matcher:
+        if version_matcher.group(0) == '2015'\
+        and install_version_string.find('Extension') > 0:
+            create_texture_cmd += 'isColorManaged=True,'
+        elif int(version_matcher.group(0)) > 2015:
+            create_texture_cmd += 'isColorManaged=True,'
     for idx, pairs in enumerate(connectTable):
         if not checks[idx]:
             continue
         # Texture node create
-        filenode = mc.shadingNode('file',
-            name=pSubstituteFunction(textureRule, channel=cnames[idx]),
-                asTexture=True)
+        #filenode = mc.shadingNode('file',
+        #    name=pSubstituteFunction(textureRule, channel=cnames[idx]),
+        #        asTexture=True)
+        create_texture_temp_cmd = create_texture_cmd + (
+            'name=\"' + pSubstituteFunction(
+                textureRule, channel=cnames[idx]) + '\")'
+        )
+        filenode = eval(create_texture_temp_cmd)
         # aAttr is output attribute from texture,
         # bAttr is input attribute into shader.
         aAttr = pairs[0]
