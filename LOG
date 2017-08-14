@@ -91,3 +91,9 @@ ver 1.0.03 : Jul/ 07/ 2017
     1. Fix create texture color management node connected
     in Maya 2015 Extension 1 or upper versions.
     
+ver 1.1.00 : Aug/ 15/ 2017
+    1. Remove "Baker" function
+    2. Now working on Maya 2017 (PySide2)
+    3. Fix problem that the new cm on Maya 2015 oldest version
+    4. Fix color-profile incorrect
+    

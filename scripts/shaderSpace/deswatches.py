@@ -12,8 +12,17 @@
 import maya.cmds as mc
 import maya.OpenMayaUI as omui
 from functools import partial
-from PySide import QtCore, QtGui
-from shiboken import wrapInstance
+from config import *
+if int(kMayaVersion) >= 2017:
+    import PySide2.QtWidgets as QtGui
+    import PySide2.QtGui as QtGui4
+    from PySide2 import QtCore
+    from shiboken2 import wrapInstance
+else:
+    from PySide import QtGui, QtCore
+    from shiboken import wrapInstance
+#from PySide import QtCore, QtGui
+#from shiboken import wrapInstance
 
 GAMMA_VALUE = 0.4545
 

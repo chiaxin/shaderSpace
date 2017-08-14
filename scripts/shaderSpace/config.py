@@ -21,8 +21,8 @@ kLinearProfile = u'Raw'
 # Vray color space - 0: linear, 1: Gamma, 2: sRGB
 kVrayDegammaMethod = 1
 kVrayDegammaValue = 2.2
-kVersion = '1.0.03'
-kLastUpdate = 'July, 04, 2017'
+kVersion = '1.1.0'
+kLastUpdate = 'Aug, 14, 2017'
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
 # List shaders supported
@@ -30,7 +30,11 @@ kShadersList = ('blinn',
                 'mia_material_x_passes',
                 'aiStandard',
                 'VRayMtl')
-kColorManagementShaders = ('blinn', 'mia_material_x_passes')
+# 2017/8/14 Fix Maya 2017 Arnold use Maya color-management
+if int(kMayaVersion) >= 2017:
+    kColorManagementShaders = ('blinn', 'mia_material_x_passes', 'aiStandard')
+else:
+    kColorManagementShaders = ('blinn', 'mia_material_x_passes')
 kVrayColorMangementShaders = ('VRayMtl')
 kGeneralBumpMapMethod = ('blinn', 'aiStandard')
 kMentalRayBumpMapMethod = ('mia_material_x_passes')
@@ -151,7 +155,7 @@ kHelpInfo = ('Please check out shaderSpace_intro PDF document', )
 
 kAboutInfo = ('Shader Space : Create Shader Toolset in Maya',
               '--------------------------------------------',
-              'Support Maya version : 2014, 2015, 2016',
+              'Support Maya version : 2014, 2015, 2016, 2017',
               'Support Shader : ' + ', '.join(kShadersList),
               'Author : Chia Xin Lin',
               'Current Version : ' + kVersion,

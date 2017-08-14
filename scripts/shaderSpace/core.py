@@ -15,7 +15,10 @@ import os.path
 from functools import partial
 import maya.cmds as mc
 import maya.mel as mel
+import logging
 from config import *
+
+logging.basicConfig(levels=logging.DEBUG, format='%(levelname)s : %(message)s')
 
 def isVaildName(name):
     matcher = re.match(r'[a-zA-Z_]\w+', name)
@@ -206,17 +209,19 @@ def createShader(*args, **kwargs):
         # We need to set linear profile if is not color channel.
         # In VRay, we need to add VRay degamma attribute, 
         # And set it to sRGB if is color channel.
+        # 2017/08/14 Fix :
+        cm_is_exists = mel.eval("int $int =`exists colorManagementPrefs`") != 0
         if gammaCorrentMode:
             if shaderType in kColorManagementShaders and not withColorChannel:
-                if kMayaVersion == '2014':
+                if not cm_is_exists:
                     _setColorProfileOld(filenode, 2)
-                elif kMayaVersion in ('2015', '2016'):
+                else:
                     _setColorProfileNew(filenode, colorProfiles[1])
             elif shaderType in kColorManagementShaders and withColorChannel:
-                if kMayaVersion == '2014':
+                if not cm_is_exists:
                     # Do nothing
                     pass
-                elif kMayaVersion in ('2015', '2016'):
+                else:
                     _setColorProfileNew(filenode, colorProfiles[0])
             elif shaderType in kVrayColorMangementShaders and withColorChannel:
                 _setVrayFileGamma(filenode,
@@ -300,6 +305,7 @@ def _setColorProfileOld(filenode, colorProfile):
     mc.setAttr(filenode+'.colorProfile', colorProfile)
 
 def _setColorProfileNew(filenode, colorProfile):
+    logging.debug('%s : color-profile set %s'%(filenode, colorProfile))
     if colorProfile in \
     mc.colorManagementCatalog(ltc=True, type='input'):
         mc.setAttr(filenode+'.colorSpace', colorProfile, typ='string')
