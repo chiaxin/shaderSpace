@@ -29,7 +29,7 @@ import maya.OpenMayaUI as omui
 import tools
 import ilrocc
 from config import *
-if int(kMayaVersion) >= 2017:
+if numberVersion >= 2017:
     import PySide2.QtWidgets as QtGui
     import PySide2.QtGui as QtGui4
     from PySide2 import QtCore

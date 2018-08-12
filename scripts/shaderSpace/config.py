@@ -21,25 +21,36 @@ kLinearProfile = u'Raw'
 # Vray color space - 0: linear, 1: Gamma, 2: sRGB
 kVrayDegammaMethod = 1
 kVrayDegammaValue = 2.2
-kVersion = '1.1.0'
+kVersion = '1.2.0'
 kLastUpdate = 'Aug, 14, 2017'
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
+# 2018/8/12 Fix, Let kShadersList tuple match kRelatives keys.
 # List shaders supported
-kShadersList = ('blinn',
-                'mia_material_x_passes',
-                'aiStandard',
-                'VRayMtl')
+#kShadersList = ('blinn',
+#                'mia_material_x_passes',
+#                'aiStandard',
+#                'VRayMtl')
 # 2017/8/14 Fix Maya 2017 Arnold use Maya color-management
-if int(kMayaVersion) >= 2017:
-    kColorManagementShaders = ('blinn', 'mia_material_x_passes', 'aiStandard')
+# 2018/8/12 Fix, Because 2016.5 is get 2016 Extension * SP *.
+numberVersion = kMayaVersion[:4]
+# If convert version to float failed, set it 2015.
+try:
+    numberVersion = int(numberVersion)
+except ValueError:
+    numberVersion = 2015.0
+# If version has "Extension", add 0.5.
+if kMayaVersion.find('Extension'):
+    numberVersion = numberVersion + 0.5
+if numberVersion >= 2017.0:
+    kColorManagementShaders = ('blinn', 'mia_material_x_passes', 'aiStandard', 'aiStandardSurface')
 else:
     kColorManagementShaders = ('blinn', 'mia_material_x_passes')
 kVrayColorMangementShaders = ('VRayMtl')
 kGeneralBumpMapMethod = ('blinn', 'aiStandard')
 kMentalRayBumpMapMethod = ('mia_material_x_passes')
 kMentalRayBumpMapChannel = 'standard_bump'
-kVrayBumpMapMethod = ('VRayMtl')
+kVrayBumpMapMethod = ('VRayMtl',)
 kGeneralShadingGroupConnectMethod = ('blinn', 'aiStandard', 'VRayMtl')
 kMentalRayShadingGroupConnectMethod = ('mia_material_x_passes')
 
@@ -114,6 +125,30 @@ kRelatives = {  'blinn':(
                 ('outColor', 'illumColor'),
                 ('outColor', 'opacityMap'))
 }
+# IF mtoa (Arnold Renderer) version is over than 2,
+# Arnold use "aiStanceSurface" instead of "aiStandard".
+if maya.cmds.pluginInfo('mtoa', q=True, l=True):
+    mtoaVersion = maya.cmds.pluginInfo('mtoa', q=True, v=True)
+    mtoaMajorVersion = int(mtoaVersion[0])
+    if mtoaMajorVersion > 1:
+        kRelatives['aiStandardSurface'] = (
+            ('outColor', 'baseColor'),
+            ('outAlpha', 'base'),
+            ('outAlpha', 'diffuseRoughness'),
+            ('outAlpha', 'specular'),
+            ('outColor', 'specularColor'),
+            ('outAlpha', 'specularRoughness')
+            ('outAlpha', 'transmission'),
+            ('outColor', 'transmissionColor'),
+            ('outAlpha', 'transmissionExtraRoughness'),
+            ('outAlpha', 'normalCamera'),
+            ('outColor', 'emissionColor'),
+            ('outColor', 'opacity')
+        )
+        del kRelatives['aiStandard']
+
+kShadersList = kRelatives.keys()
+
 kDefaultMappings={
     'shaderSpaceNameStrOptVars':[u'asset', u'shader', u'user', u'v01'],
     'shaderSpaceChannelsIntOptVars':[2, 0, 0, 2, 0, 2, 0, 0, 0, 2, 0, 0],
@@ -155,8 +190,8 @@ kHelpInfo = ('Please check out shaderSpace_intro PDF document', )
 
 kAboutInfo = ('Shader Space : Create Shader Toolset in Maya',
               '--------------------------------------------',
-              'Support Maya version : 2014, 2015, 2016, 2017',
-              'Support Shader : ' + ', '.join(kShadersList),
+              'Support Maya version : 2014, 2015, 2016, 2016.5, 2017, 2018',
+              'Support Shaders : ' + ', '.join(kShadersList),
               'Author : Chia Xin Lin',
               'Current Version : ' + kVersion,
               'Last Update : ' + kLastUpdate,
