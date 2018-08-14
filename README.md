@@ -1,27 +1,38 @@
-#shaderSpace
+# shaderSpace
 
 The Autodesk Maya script that can be build shader with texture and connections more faster and convenient.
 
-Version 1.0.03 release
+# Version
 
-#How to use
+1.2.0
 
-Copy the scripts and prefs folder into Maya script path,
+# How to use
 
-Default path should be C:\%USERNAME%\document\maya\%MAYA_VERSION% (Windows)
+Copy the scripts and prefs folder into your Maya script path,  
+Default path should be 
 
-Open Maya application, enter below commands into python command window :
++ C:\%USERNAME%\document\maya\%MAYA_VERSION% (Windows)
 
+Open Maya application, enter below commands into python command window :  
+
+```python
 import shaderSpace
-
 reload(shaderSpace)
+```
 
-If success, Will open the script UI.
+If success, It will lanuch shaderSpace.
 
-#Maya Support
+# Maya Support
 
-Maya 2014, 2015, 2016, 2016.5
+Maya 2014, 2015, 2016, 2016.5, 2017, 2018
 
-#OS Support
+# Renderer Support
 
-Windows
++ Maya Software Renderer.
++ Mental Ray Renderer.
++ Arnold Renderer (mtoa 2 & 3).
++ VRay Renderer.
+
+# OS Support
+
+Windows 10

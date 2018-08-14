@@ -29,7 +29,7 @@ import maya.OpenMayaUI as omui
 import tools
 import ilrocc
 from config import *
-if numberVersion >= 2017:
+if kMayaVersionNumber >= 2017:
     import PySide2.QtWidgets as QtGui
     import PySide2.QtGui as QtGui4
     from PySide2 import QtCore
@@ -52,7 +52,7 @@ for key in kDefaultMappings.keys():
         _PRESERVE[key] = copy.deepcopy(kDefaultMappings[key])
 _SHADER_PRESET = 'No Preset'
 # 2017/8/14 Fix
-if int(kMayaVersion) >= 2017:
+if kMayaVersionNumber >= 2017.0:
     _VAILD_MAYA_NODE_NAME = QtGui4.QRegExpValidator(QtCore.QRegExp(r'\w+'))
     _VAILD_WIN_FILE_NAME = QtGui4.QRegExpValidator(
         QtCore.QRegExp('^[^\/\\\:\*\?\"\<\>\| ]+$'))
@@ -192,7 +192,7 @@ class ShaderSpaceMainWin(QtGui.QMainWindow):
         icon = _findIconImage('shaderSpace.png')
         # 2017/8/14 Fix
         if icon: 
-            if int(kMayaVersion) >= 2017:
+            if kMayaVersionNumber >= 2017.0:
                 self.setWindowIcon(QtGui4.QIcon(icon))
             else:
                 self.setWindowIcon(QtGui.QIcon(icon))
@@ -204,25 +204,25 @@ class ShaderSpaceMainWin(QtGui.QMainWindow):
 
     def toolbars(self):
         # 2017/8/15 Fix
-        if int(kMayaVersion) >= 2017:
+        if kMayaVersionNumber >= 2017.0:
             self.save_act = QtGui.QAction(QtGui4.QIcon(
                 _findIconImage('shaderSpaceSave.png')), 'Save Settings', self)
         else:
             self.save_act = QtGui.QAction(QtGui.QIcon(
                 _findIconImage('shaderSpaceSave.png')), 'Save Settings', self)
-        if int(kMayaVersion) >= 2017:
+        if kMayaVersionNumber >= 2017.0:
             self.load_act = QtGui.QAction(QtGui4.QIcon(
                 _findIconImage('shaderSpaceLoad.png')), 'Load Settings', self)
         else:
             self.load_act = QtGui.QAction(QtGui.QIcon(
                 _findIconImage('shaderSpaceLoad.png')), 'Load Settings', self)
-        if int(kMayaVersion) >= 2017:
+        if kMayaVersionNumber >= 2017.0:
             self.reset_act = QtGui.QAction(QtGui4.QIcon(
                 _findIconImage('shaderSpaceReset.png')), 'Reset Settings', self)
         else:
             self.reset_act = QtGui.QAction(QtGui.QIcon(
                 _findIconImage('shaderSpaceReset.png')), 'Reset Settings', self)
-        if int(kMayaVersion) >= 2017:
+        if kMayaVersionNumber >= 2017.0:
             self.lock_act = QtGui.QAction(QtGui4.QIcon(
                 _findIconImage('shaderSpaceLock.png')), 'Lock Settings',
                     self, checkable=True)
@@ -230,13 +230,13 @@ class ShaderSpaceMainWin(QtGui.QMainWindow):
             self.lock_act = QtGui.QAction(QtGui.QIcon(
                 _findIconImage('shaderSpaceLock.png')), 'Lock Settings',
                     self, checkable=True)
-        if int(kMayaVersion) >= 2017:
+        if kMayaVersionNumber >= 2017.0:
             self.deg_act = QtGui.QAction(QtGui4.QIcon(
                 _findIconImage('shaderSpaceDegamma.png')), 'Degamma Swatches', self)
         else:
             self.deg_act = QtGui.QAction(QtGui.QIcon(
                 _findIconImage('shaderSpaceDegamma.png')), 'Degamma Swatches', self)
-        if int(kMayaVersion) >= 2017:
+        if kMayaVersionNumber >= 2017.0:
             self.expall_act = QtGui.QAction(QtGui4.QIcon(
                 _findIconImage('shaderSpaceExportAll.png')), 
                     'Export All Shaders', self)
@@ -244,7 +244,7 @@ class ShaderSpaceMainWin(QtGui.QMainWindow):
             self.expall_act = QtGui.QAction(QtGui.QIcon(
                 _findIconImage('shaderSpaceExportAll.png')), 
                     'Export All Shaders', self)
-        if int(kMayaVersion) >= 2017:
+        if kMayaVersionNumber >= 2017.0:
             self.expsel_act = QtGui.QAction(QtGui4.QIcon(
                 _findIconImage('shaderSpaceExportSel.png')), 
                     'Export Selected Shaders', self)
@@ -252,7 +252,7 @@ class ShaderSpaceMainWin(QtGui.QMainWindow):
             self.expsel_act = QtGui.QAction(QtGui.QIcon(
                 _findIconImage('shaderSpaceExportSel.png')), 
                     'Export Selected Shaders', self)
-        if int(kMayaVersion) >= 2017:
+        if kMayaVersionNumber >= 2017.0:
             self.help_act = QtGui.QAction(QtGui4.QIcon(
                 _findIconImage('shaderSpaceHelp.png')), 'Help', 
                     self, checkable=True)
@@ -607,7 +607,7 @@ class ShaderSpaceCreateWin(QtGui.QWidget):
 
     def _vauleField(self):
         # 2017/8/14 Fix
-        if int(kMayaVersion) >= 2017:
+        if kMayaVersionNumber >= 2017.0:
             bump_valid = QtGui4.QRegExpValidator(QtCore.QRegExp(r'(0|1)\.\d{1,3}'))
         else:
             bump_valid = QtGui.QRegExpValidator(QtCore.QRegExp(r'(0|1)\.\d{1,3}'))
@@ -1158,7 +1158,7 @@ class ShaderSpaceSettingWin(QtGui.QWidget):
                                                 QtGui.QSizePolicy.Fixed)
         # Layout
         self.rule_hl = QtGui.QHBoxLayout()
-        self.rule_hl.addWidget(QtGui.QLabel('Texture Path Rule'))
+        self.rule_hl.addWidget(QtGui.QLabel('Rule'))
         self.rule_hl.addWidget(self.texture_path_rule_le)
         self.rule_gb = QtGui.QGroupBox('Auto Texture Path')
         self.rule_gb.setAlignment(QtCore.Qt.AlignCenter)

@@ -22,27 +22,27 @@ kLinearProfile = u'Raw'
 kVrayDegammaMethod = 1
 kVrayDegammaValue = 2.2
 kVersion = '1.2.0'
-kLastUpdate = 'Aug, 14, 2017'
+kLastUpdate = '2018-08-15'
 kWebsite = 'http://github.com/chiaxin/shaderSpace'
 
 # 2018/8/12 Fix, Let kShadersList tuple match kRelatives keys.
 # List shaders supported
-#kShadersList = ('blinn',
+# kShadersList = ('blinn',
 #                'mia_material_x_passes',
 #                'aiStandard',
 #                'VRayMtl')
 # 2017/8/14 Fix Maya 2017 Arnold use Maya color-management
 # 2018/8/12 Fix, Because 2016.5 is get 2016 Extension * SP *.
-numberVersion = kMayaVersion[:4]
+kMayaVersionNumber = kMayaVersion[:4]
 # If convert version to float failed, set it 2015.
 try:
-    numberVersion = int(numberVersion)
+    kMayaVersionNumber = int(kMayaVersionNumber)
 except ValueError:
-    numberVersion = 2015.0
+    kMayaVersionNumber = 2015.0
 # If version has "Extension", add 0.5.
 if kMayaVersion.find('Extension'):
-    numberVersion = numberVersion + 0.5
-if numberVersion >= 2017.0:
+    kMayaVersionNumber = kMayaVersionNumber + 0.5
+if kMayaVersionNumber >= 2017.0:
     kColorManagementShaders = ('blinn', 'mia_material_x_passes', 'aiStandard', 'aiStandardSurface')
 else:
     kColorManagementShaders = ('blinn', 'mia_material_x_passes')
@@ -70,82 +70,76 @@ kChannelList = ('Color',
 )
 # This dictionary describe how to connect channels
 kRelatives = {  'blinn':(
-                ('outColor', 'color'),
-                ('outAlpha', 'diffuse'),
-                ('outAlpha', 'translucence'),
-                ('outAlpha', 'specularRollOff'),
-                ('outColor', 'specularColor'),
-                ('outAlpha', 'eccentricity'),
-                ('outColor', 'transparency'),
-                ('outColor', 'reflectedColor'),
-                ('outAlpha', 'reflectivity'),
-                ('outAlpha', 'normalCamera'),
-                ('outColor', 'incandescence'),
-                ('outAlpha', 'matteOpacity')
+                    ('outColor', 'color'),
+                    ('outAlpha', 'diffuse'),
+                    ('outAlpha', 'translucence'),
+                    ('outAlpha', 'specularRollOff'),
+                    ('outColor', 'specularColor'),
+                    ('outAlpha', 'eccentricity'),
+                    ('outColor', 'transparency'),
+                    ('outColor', 'reflectedColor'),
+                    ('outAlpha', 'reflectivity'),
+                    ('outAlpha', 'normalCamera'),
+                    ('outColor', 'incandescence'),
+                    ('outAlpha', 'matteOpacity')
                 ),
                 'mia_material_x_passes':(
-                ('outColor', 'diffuse'),
-                ('outAlpha', 'diffuse_weight'),
-                ('outAlpha', 'diffuse_roughness'),
-                ('outAlpha', 'reflectivity'),
-                ('outColor', 'refl_color'),
-                ('outAlpha', 'refl_gloss'),
-                ('outAlpha', 'transparency'),
-                ('outColor', 'refr_color'),
-                ('outAlpha', 'refr_gloss'),
-                ('outAlpha', 'standard_bump'),
-                ('outColor', 'additional_color'),
-                ('outAlpha', 'cutout_opacity')
+                    ('outColor', 'diffuse'),
+                    ('outAlpha', 'diffuse_weight'),
+                    ('outAlpha', 'diffuse_roughness'),
+                    ('outAlpha', 'reflectivity'),
+                    ('outColor', 'refl_color'),
+                    ('outAlpha', 'refl_gloss'),
+                    ('outAlpha', 'transparency'),
+                    ('outColor', 'refr_color'),
+                    ('outAlpha', 'refr_gloss'),
+                    ('outAlpha', 'standard_bump'),
+                    ('outColor', 'additional_color'),
+                    ('outAlpha', 'cutout_opacity')
                 ),
                 'aiStandard':(
-                ('outColor', 'color'),
-                ('outAlpha', 'Kd'),
-                ('outAlpha', 'diffuseRoughness'),
-                ('outAlpha', 'Ks'),
-                ('outColor', 'KsColor'),
-                ('outAlpha', 'specularRoughness'),
-                ('outAlpha', 'Kt'),
-                ('outColor', 'KrColor'),
-                ('outAlpha', 'refractionRoughness'),
-                ('outAlpha', 'normalCamera'),
-                ('outColor', 'emissionColor'),
-                ('outColor', 'opacity')
+                    ('outColor', 'color'),
+                    ('outAlpha', 'Kd'),
+                    ('outAlpha', 'diffuseRoughness'),
+                    ('outAlpha', 'Ks'),
+                    ('outColor', 'KsColor'),
+                    ('outAlpha', 'specularRoughness'),
+                    ('outAlpha', 'Kt'),
+                    ('outColor', 'KrColor'),
+                    ('outAlpha', 'refractionRoughness'),
+                    ('outAlpha', 'normalCamera'),
+                    ('outColor', 'emissionColor'),
+                    ('outColor', 'opacity')
+                ),
+                'aiStandardSurface':(
+                    ('outColor', 'baseColor'),
+                    ('outAlpha', 'base'),
+                    ('outAlpha', 'diffuseRoughness'),
+                    ('outAlpha', 'specular'),
+                    ('outColor', 'specularColor'),
+                    ('outAlpha', 'specularRoughness'),
+                    ('outAlpha', 'transmission'),
+                    ('outColor', 'transmissionColor'),
+                    ('outAlpha', 'transmissionExtraRoughness'),
+                    ('outAlpha', 'normalCamera'),
+                    ('outColor', 'emissionColor'),
+                    ('outColor', 'opacity')
                 ),
                 'VRayMtl':(
-                ('outColor', 'color'),
-                ('outAlpha', 'diffuseColorAmount'),
-                ('outAlpha', 'roughnessAmount'),
-                ('outAlpha', 'reflectionColorAmount'),
-                ('outColor', 'reflectionColor'),
-                ('outAlpha', 'reflectionGlossiness'),
-                ('outAlpha', 'refractionColorAmount'),
-                ('outColor', 'refractionColor'),
-                ('outAlpha', 'refractionGlossiness'),
-                ('outColor', 'bumpMap'),
-                ('outColor', 'illumColor'),
-                ('outColor', 'opacityMap'))
+                    ('outColor', 'color'),
+                    ('outAlpha', 'diffuseColorAmount'),
+                    ('outAlpha', 'roughnessAmount'),
+                    ('outAlpha', 'reflectionColorAmount'),
+                    ('outColor', 'reflectionColor'),
+                    ('outAlpha', 'reflectionGlossiness'),
+                    ('outAlpha', 'refractionColorAmount'),
+                    ('outColor', 'refractionColor'),
+                    ('outAlpha', 'refractionGlossiness'),
+                    ('outColor', 'bumpMap'),
+                    ('outColor', 'illumColor'),
+                    ('outColor', 'opacityMap')
+                )
 }
-# IF mtoa (Arnold Renderer) version is over than 2,
-# Arnold use "aiStanceSurface" instead of "aiStandard".
-if maya.cmds.pluginInfo('mtoa', q=True, l=True):
-    mtoaVersion = maya.cmds.pluginInfo('mtoa', q=True, v=True)
-    mtoaMajorVersion = int(mtoaVersion[0])
-    if mtoaMajorVersion > 1:
-        kRelatives['aiStandardSurface'] = (
-            ('outColor', 'baseColor'),
-            ('outAlpha', 'base'),
-            ('outAlpha', 'diffuseRoughness'),
-            ('outAlpha', 'specular'),
-            ('outColor', 'specularColor'),
-            ('outAlpha', 'specularRoughness')
-            ('outAlpha', 'transmission'),
-            ('outColor', 'transmissionColor'),
-            ('outAlpha', 'transmissionExtraRoughness'),
-            ('outAlpha', 'normalCamera'),
-            ('outColor', 'emissionColor'),
-            ('outColor', 'opacity')
-        )
-        del kRelatives['aiStandard']
 
 kShadersList = kRelatives.keys()
 
